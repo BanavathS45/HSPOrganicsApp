@@ -4,7 +4,7 @@ import { useNavigate, NavLink, Outlet } from 'react-router-dom';
 import { isMock } from '../firebase/config';
 import {
   LayoutDashboard, ShoppingCart, Users, Ticket,
-  Bell, Settings, LogOut, ShieldAlert, ArrowLeft
+  Bell, Settings, LogOut, ShieldAlert, ArrowLeft, Truck
 } from 'lucide-react';
 
 const AdminLayout = () => {
@@ -32,6 +32,7 @@ const AdminLayout = () => {
     { to: '/admin', label: 'Dashboard', icon: <LayoutDashboard size={18} />, end: true },
     { to: '/admin/products', label: 'Products', icon: <ShoppingCart size={18} /> },
     { to: '/admin/orders', label: 'Orders', icon: <Users size={18} /> },
+    { to: '/admin/delivery', label: 'Delivery Boys', icon: <Truck size={18} /> },
     { to: '/admin/coupons', label: 'Coupons', icon: <Ticket size={18} /> },
     { to: '/admin/notifications', label: 'Notifications', icon: <Bell size={18} /> },
   ];

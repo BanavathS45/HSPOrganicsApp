@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useApp } from '../../context/AppContext';
-import { orderService, notificationService } from '../../firebase/db';
+import { orderService, notificationService, deliveryBoyService } from '../../firebase/db';
 import {
   Check, X, Truck, Package, MessageCircle, MapPin,
   MapIcon, Bell, ArrowRight, ClipboardCheck
@@ -10,6 +10,21 @@ import DeliveryMap from '../../components/DeliveryMap';
 const Orders = () => {
   const { orders } = useApp();
   const [selectedOrder, setSelectedOrder] = useState(null);
+  const [deliveryBoys, setDeliveryBoys] = useState([]);
+
+  useEffect(() => {
+    const unsub = deliveryBoyService.subscribe((list) => {
+      const formatted = list.map(boy => ({
+        id: boy.uid || boy.id,
+        uid: boy.uid || boy.id,
+        name: boy.displayName || boy.name,
+        phone: boy.phone || '',
+        photo: boy.photoURL || `https://ui-avatars.com/api/?name=${encodeURIComponent(boy.displayName || boy.name)}`
+      }));
+      setDeliveryBoys(formatted);
+    });
+    return () => unsub();
+  }, []);
 
   // Manual Notification Form State
   const [customNotification, setCustomNotification] = useState('');
@@ -136,8 +151,17 @@ const Orders = () => {
                 </div>
 
                 <div className="mb-3">
-                  <span className="text-secondary text-xs fw-semibold font-body d-block">Deliver To:</span>
-                  <p className="m-0 text-dark font-body text-xs mt-1" style={{ fontSize: '12.5px', lineHeight: '1.4' }}>
+                  <div className="d-flex justify-content-between align-items-center mb-1">
+                    <span className="text-secondary text-xs fw-semibold font-body">Deliver To:</span>
+                    <a 
+                      href={`tel:${selectedOrder.customerPhone || '+91 99887 76655'}`} 
+                      className="btn btn-xs btn-outline-success rounded-pill px-2.5 py-0.5 font-body d-flex align-items-center gap-1"
+                      style={{ fontSize: '10.5px' }}
+                    >
+                      📞 Call Customer
+                    </a>
+                  </div>
+                  <p className="m-0 text-dark font-body text-xs" style={{ fontSize: '12.5px', lineHeight: '1.4' }}>
                     <strong>{selectedOrder.customerName}</strong> ({selectedOrder.customerEmail})<br />
                     {selectedOrder.address.addressLine}, {selectedOrder.address.city} - {selectedOrder.address.postalCode}
                   </p>
@@ -228,6 +252,120 @@ const Orders = () => {
                     </div>
                   )}
                 </div>
+
+                {/* Delivery Boy Assignment Panel */}
+                {selectedOrder.status !== 'Pending' && selectedOrder.status !== 'Cancelled' && (
+                  <div className="border-top pt-3 mt-3">
+                    <h6 className="font-heading fw-bold text-secondary text-xs mb-2.5">Delivery Boy Assignment:</h6>
+                    
+                    {selectedOrder.deliveryBoy ? (
+                      <div className="p-2 bg-success bg-opacity-10 border border-success border-opacity-25 rounded-4 d-flex align-items-center gap-2">
+                        <img 
+                          src={selectedOrder.deliveryBoy.photo} 
+                          alt={selectedOrder.deliveryBoy.name} 
+                          className="rounded-circle object-fit-cover border border-success" 
+                          style={{ width: '40px', height: '40px' }}
+                        />
+                        <div className="flex-grow-1">
+                          <h6 className="m-0 font-heading fw-bold text-success" style={{ fontSize: '12.5px' }}>
+                            {selectedOrder.deliveryBoy.name}
+                          </h6>
+                          <span className="text-muted font-body text-xs" style={{ fontSize: '11px' }}>
+                            {selectedOrder.deliveryBoy.phone}
+                          </span>
+                        </div>
+                        <select
+                          className="form-select form-select-sm w-auto rounded-pill border-success-subtle font-body"
+                          style={{ fontSize: '10.5px', padding: '2px 24px 2px 8px' }}
+                          value={selectedOrder.deliveryBoy.id}
+                          onChange={async (e) => {
+                            const dboy = deliveryBoys.find(b => b.id === e.target.value);
+                            if (dboy) {
+                              try {
+                                const updated = await orderService.updateOrder(selectedOrder.id, { deliveryBoy: dboy });
+                                setSelectedOrder(updated);
+                                
+                                // Push notifications to ALL THREE (Customer, Admin, and Delivery boy)!
+                                await notificationService.addSystemNotification({
+                                  title: 'Delivery Partner Updated! 🚴',
+                                  body: `${dboy.name} (${dboy.phone}) is now assigned to deliver order ${selectedOrder.id}.`,
+                                  type: 'order_status',
+                                  userId: selectedOrder.userId
+                                });
+                                await notificationService.addSystemNotification({
+                                  title: 'Delivery Partner Updated! 🛡️',
+                                  body: `Order ${selectedOrder.id} has been assigned to ${dboy.name}.`,
+                                  type: 'order_status',
+                                  userId: 'admin'
+                                });
+                                await notificationService.addSystemNotification({
+                                  title: 'New Delivery Assigned! 🚴',
+                                  body: `You have been assigned order ${selectedOrder.id} to deliver to ${selectedOrder.customerName}.`,
+                                  type: 'order_status',
+                                  userId: dboy.uid || dboy.id
+                                });
+
+                                alert(`Assigned ${dboy.name} to Order ${selectedOrder.id}`);
+                              } catch (err) {
+                                alert("Failed to re-assign delivery boy: " + err.message);
+                              }
+                            }
+                          }}
+                        >
+                          {deliveryBoys.map(b => (
+                            <option key={b.id} value={b.id}>{b.name}</option>
+                          ))}
+                        </select>
+                      </div>
+                    ) : (
+                      <div className="p-2.5 bg-light border border-dashed rounded-4 text-center">
+                        <span className="text-muted text-xs d-block mb-2">No delivery partner assigned yet.</span>
+                        <div className="d-flex flex-wrap justify-content-center gap-1.5">
+                          {deliveryBoys.map(b => (
+                            <button
+                              key={b.id}
+                              type="button"
+                              onClick={async () => {
+                                try {
+                                  const updated = await orderService.updateOrder(selectedOrder.id, { deliveryBoy: b });
+                                  setSelectedOrder(updated);
+                                  
+                                  // Push notifications to ALL THREE (Customer, Admin, and Delivery boy)!
+                                  await notificationService.addSystemNotification({
+                                    title: 'Delivery Partner Assigned! 🚴',
+                                    body: `${b.name} (${b.phone}) has been assigned to deliver your order ${selectedOrder.id}.`,
+                                    type: 'order_status',
+                                    userId: selectedOrder.userId
+                                  });
+                                  await notificationService.addSystemNotification({
+                                    title: 'Delivery Partner Assigned! 🛡️',
+                                    body: `Order ${selectedOrder.id} has been assigned to ${b.name}.`,
+                                    type: 'order_status',
+                                    userId: 'admin'
+                                  });
+                                  await notificationService.addSystemNotification({
+                                    title: 'New Delivery Assigned! 🚴',
+                                    body: `You have been assigned order ${selectedOrder.id} to deliver to ${selectedOrder.customerName}.`,
+                                    type: 'order_status',
+                                    userId: b.uid || b.id
+                                  });
+
+                                  alert(`Successfully assigned ${b.name} to deliver this order!`);
+                                } catch (err) {
+                                  alert("Failed to assign delivery boy: " + err.message);
+                                }
+                              }}
+                              className="btn btn-xs btn-outline-success rounded-pill px-2.5 py-1 font-body text-xs d-flex align-items-center gap-1"
+                              style={{ fontSize: '11px' }}
+                            >
+                              + Assign {b.name.split(' ')[0]}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
               </div>
 
               {/* Push Notifications Console */}

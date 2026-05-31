@@ -114,6 +114,76 @@ const Orders = () => {
                   </div>
                 </div>
 
+                {/* Delivery Boy assigned details - visible from Preparing stage */}
+                {trackingOrder.deliveryBoy && (
+                  <div className="p-3 bg-success bg-opacity-10 border border-success border-opacity-20 rounded-4 mb-4 d-flex flex-column gap-3">
+                    <div className="d-flex align-items-center gap-3">
+                      <img 
+                        src={trackingOrder.deliveryBoy.photo || trackingOrder.deliveryBoy.photoURL} 
+                        alt={trackingOrder.deliveryBoy.name} 
+                        className="rounded-circle border border-2 border-success object-fit-cover shadow-sm"
+                        style={{ width: '52px', height: '52px' }}
+                      />
+                      <div className="flex-grow-1 text-start">
+                        <span className="text-success font-heading fw-bold d-block" style={{ fontSize: '9.5px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                          🚴 Assigned Delivery Partner
+                        </span>
+                        <h6 className="m-0 font-heading fw-extrabold text-dark" style={{ fontSize: '14.5px' }}>
+                          {trackingOrder.deliveryBoy.name}
+                        </h6>
+                        <span className="text-muted font-body d-block mt-0.5" style={{ fontSize: '11px' }}>
+                          📞 {trackingOrder.deliveryBoy.phone}
+                        </span>
+                        <span className="d-block mt-0.5" style={{ fontSize: '11px' }}>
+                          Status:{' '}
+                          <strong className={trackingOrder.status === 'Out for Delivery' ? 'text-success' : trackingOrder.status === 'Delivered' ? 'text-secondary' : 'text-warning'}>
+                            {trackingOrder.status === 'Out for Delivery' ? '⚡ En-route to you' : 
+                             trackingOrder.status === 'Delivered' ? '✅ Delivered' : 
+                             '🌱 Packing at Farm'}
+                          </strong>
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* Call Partner & Navigate Buttons */}
+                    <div className="d-flex gap-2">
+                      <a 
+                        href={`tel:${trackingOrder.deliveryBoy.phone}`}
+                        className="btn btn-success flex-grow-1 d-flex align-items-center justify-content-center gap-1.5 py-2 shadow-sm font-heading fw-bold text-white rounded-pill"
+                        style={{ fontSize: '12.5px' }}
+                      >
+                        📞 Call Partner
+                      </a>
+                      {trackingOrder.status === 'Out for Delivery' && (
+                        <a 
+                          href={`https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(trackingOrder.address)}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="btn btn-outline-success d-flex align-items-center justify-content-center gap-1.5 py-2 font-heading fw-bold rounded-pill px-3"
+                          style={{ fontSize: '12px' }}
+                        >
+                          🗺️ Track
+                        </a>
+                      )}
+                    </div>
+
+                    {/* Dynamic Estimated Arrival Time */}
+                    <div className="border-top pt-2.5 d-flex justify-content-between align-items-center text-xs">
+                      <span className="text-secondary font-body">Estimated Arrival:</span>
+                      <span className="font-heading fw-bold text-success" style={{ fontSize: '12.5px' }}>
+                        {trackingOrder.status === 'Out for Delivery' ? (
+                          `⚡ Approx. ${Math.round(trackingOrder.distanceKm * 5) + 10} mins`
+                        ) : trackingOrder.status === 'Delivered' ? (
+                          '✅ Delivered successfully!'
+                        ) : (
+                          '🌱 Preparing — ready within 30-45 mins'
+                        )}
+                      </span>
+                    </div>
+                  </div>
+                )}
+
+
                 {/* Live Order Timeline */}
                 <div className="px-2">
                   <h6 className="font-heading fw-bold text-secondary mb-3">Timeline</h6>

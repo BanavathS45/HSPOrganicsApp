@@ -16,6 +16,7 @@ const Login = () => {
   React.useEffect(() => {
     if (user) {
       if (user.role === 'admin') navigate('/admin');
+      else if (user.role === 'delivery') navigate('/delivery');
       else navigate('/');
     }
   }, [user, navigate]);
@@ -34,6 +35,7 @@ const Login = () => {
     try {
       const logged = await loginWithEmailAndPassword(email, password);
       if (logged.role === 'admin') navigate('/admin');
+      else if (logged.role === 'delivery') navigate('/delivery');
       else navigate('/');
     }
     catch (err) { setError(err.message || 'Login failed.'); }
@@ -43,6 +45,7 @@ const Login = () => {
   const quickFill = (type) => {
     if (type === 'customer') { setEmail('customer@gmail.com'); setPassword('customer123'); }
     else if (type === 'admin') { setEmail('admin@hsporganics.com'); setPassword('admin123'); }
+    else if (type === 'delivery') { setEmail('delivery@hsporganics.com'); setPassword('delivery123'); }
   };
 
   return (
@@ -352,6 +355,38 @@ const Login = () => {
               Don't have an account?{' '}
               <Link to="/register" className="signup-link">Create one</Link>
             </p> */}
+            {/* Quick Demo Access */}
+            <div className="mt-4 border-top pt-3 text-center">
+              <span className="text-muted d-block mb-2.5 font-body" style={{ fontSize: '10.5px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                ⚡ Quick Demo Sign In
+              </span>
+              <div className="d-flex justify-content-center gap-1.5 flex-wrap">
+                <button
+                  type="button"
+                  onClick={() => quickFill('customer')}
+                  className="btn btn-xs btn-outline-success rounded-pill px-2.5 py-1 font-body text-xs"
+                  style={{ fontSize: '11px' }}
+                >
+                  🌱 Customer
+                </button>
+                <button
+                  type="button"
+                  onClick={() => quickFill('admin')}
+                  className="btn btn-xs btn-outline-success rounded-pill px-2.5 py-1 font-body text-xs"
+                  style={{ fontSize: '11px' }}
+                >
+                  🛡️ Admin
+                </button>
+                <button
+                  type="button"
+                  onClick={() => quickFill('delivery')}
+                  className="btn btn-xs btn-outline-success rounded-pill px-2.5 py-1 font-body text-xs"
+                  style={{ fontSize: '11px' }}
+                >
+                  🚴 Delivery
+                </button>
+              </div>
+            </div>
           </div>
         </div>
       </div>

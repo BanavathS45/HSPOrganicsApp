@@ -21,50 +21,78 @@ if (!isMock && typeof window !== 'undefined') {
   }
 }
 
+// ── Validate VAPID key format ───────────────────────────────────────────────
+// VAPID keys must be URL-safe Base64, 65 bytes uncompressed = 87 base64 chars (no padding)
+const isValidVapidKey = (key) => {
+  if (!key || typeof key !== 'string') return false;
+  // URL-safe Base64 without padding: 87 or 88 chars
+  const stripped = key.replace(/=/g, '');
+  return /^[A-Za-z0-9_-]{86,88}$/.test(stripped);
+};
+
 // ── Register FCM Token ─────────────────────────────────────────────────────
 // Call this after the user logs in. It registers the browser for push
 // notifications and saves the token to Firestore under /fcmTokens/{uid}.
 export const registerFCMToken = async (userId) => {
   if (!messaging || !userId) return null;
-  if (!VAPID_KEY) {
-    console.warn('[HSP FCM] VITE_FIREBASE_VAPID_KEY not set — FCM token registration skipped.');
+
+  if (!isValidVapidKey(VAPID_KEY)) {
+    console.warn(
+      '[HSP FCM] VAPID key is missing or invalid. ' +
+      'Go to Firebase Console → Project Settings → Cloud Messaging → ' +
+      'Web Push Certificates → copy the key and set VITE_FIREBASE_VAPID_KEY in .env\n' +
+      'In-app Firestore notifications will still work without FCM.'
+    );
     return null;
   }
 
   try {
-    // Ensure the service worker is registered
-    const registration = await navigator.serviceWorker.register('/firebase-messaging-sw.js');
+    // Wait for the service worker to be ready (avoids race conditions on first load)
+    const registration = await navigator.serviceWorker.ready;
 
-    // Request permission first
+    // Request notification permission
     const permission = await Notification.requestPermission();
     if (permission !== 'granted') {
-      console.warn('[HSP FCM] Notification permission denied.');
+      console.warn('[HSP FCM] Notification permission denied — in-app toasts still active.');
       return null;
     }
 
-    // Get the FCM token
+    // Get the FCM device token
     const token = await getToken(messaging, {
       vapidKey: VAPID_KEY,
       serviceWorkerRegistration: registration
     });
 
     if (token) {
-      console.log('[HSP FCM] ✅ Token registered:', token.substring(0, 20) + '...');
+      console.log('[HSP FCM] ✅ FCM Token registered:', token.substring(0, 20) + '...');
 
-      // Persist the token in Firestore so admin can target specific users
+      // Persist token in Firestore for server-side targeting
       if (db) {
-        await setDoc(doc(db, 'fcmTokens', userId), {
-          token,
-          userId,
-          updatedAt: serverTimestamp(),
-          userAgent: navigator.userAgent.substring(0, 100)
-        }, { merge: true });
+        try {
+          await setDoc(doc(db, 'fcmTokens', userId), {
+            token,
+            userId,
+            updatedAt: serverTimestamp(),
+            userAgent: navigator.userAgent.substring(0, 100)
+          }, { merge: true });
+        } catch (dbErr) {
+          // Non-fatal — token is still valid for this session even if storage fails
+          console.warn('[HSP FCM] Could not persist token to Firestore:', dbErr.message);
+        }
       }
 
       return token;
     }
   } catch (err) {
-    console.error('[HSP FCM] Token registration failed:', err.message);
+    // Don't crash the app — fall back to Firestore-only in-app notifications
+    if (err.message?.includes('applicationServerKey') || err.message?.includes('subscribe')) {
+      console.warn(
+        '[HSP FCM] PushManager subscription failed — VAPID key may be from the wrong Firebase project. ' +
+        'In-app Firestore notifications will still work.'
+      );
+    } else {
+      console.warn('[HSP FCM] Token registration failed (non-fatal):', err.message);
+    }
   }
   return null;
 };

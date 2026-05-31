@@ -24,7 +24,13 @@ export const AppProvider = ({ children }) => {
   const [notifications, setNotifications] = useState([]);
   const [coupons, setCoupons] = useState([]);
   const [activeCoupon, setActiveCoupon] = useState(null);
-  const [cart, setCart] = useState([]);
+  const [cart, setCart] = useState(() => {
+    if (typeof window !== 'undefined') {
+      const savedCart = localStorage.getItem('hsp_cart');
+      return savedCart ? JSON.parse(savedCart) : [];
+    }
+    return [];
+  });
   const [theme, setTheme] = useState('light');
   
   // Active in-app notification state for real-time alerts
@@ -38,25 +44,39 @@ export const AppProvider = ({ children }) => {
     const unsubAuth = authService.onAuthStateChanged(async (activeUser) => {
       if (activeUser) {
         setUser(activeUser);
-        // Request browser push notification permission if default
+
+        // ── Push notification permission ──────────────────────────────────
+        // Always request when permission is not yet granted (works for all roles)
         if (typeof window !== 'undefined' && 'Notification' in window) {
-          if (Notification.permission === 'default') {
-            Notification.requestPermission().catch(console.error);
+          if (Notification.permission !== 'granted') {
+            Notification.requestPermission()
+              .then((perm) => {
+                if (perm === 'granted') {
+                  console.log('[HSP] Push notification permission granted ✅');
+                } else {
+                  console.warn('[HSP] Push notification permission denied — in-app toasts will still work.');
+                }
+              })
+              .catch(console.error);
           }
         }
-        // Register FCM token for this device (stores token in Firestore)
+
+        // ── FCM Token + Foreground listener ──────────────────────────────
+        // Works for all roles: admin, customer, delivery
         registerFCMToken(activeUser.uid).catch(console.error);
-        // Start listening for foreground push messages
         if (fcmUnsubRef.current) fcmUnsubRef.current();
         fcmUnsubRef.current = initForegroundMessaging();
-        // Load user addresses
-        const addrs = await addressService.getByUser(activeUser.uid);
-        setAddresses(addrs);
-        const def = addrs.find(a => a.isDefault) || addrs[0] || null;
-        setSelectedAddress(def);
-        if (def) {
-          const dist = calculateDistance(FARM_LOCATION.lat, FARM_LOCATION.lng, def.lat, def.lng);
-          setDeliveryDistance(dist);
+
+        // ── Load addresses (skip for admin & delivery who don't order) ────
+        if (activeUser.role === 'customer') {
+          const addrs = await addressService.getByUser(activeUser.uid);
+          setAddresses(addrs);
+          const def = addrs.find(a => a.isDefault) || addrs[0] || null;
+          setSelectedAddress(def);
+          if (def) {
+            const dist = calculateDistance(FARM_LOCATION.lat, FARM_LOCATION.lng, def.lat, def.lng);
+            setDeliveryDistance(dist);
+          }
         }
       } else {
         setUser(null);
@@ -86,9 +106,33 @@ export const AppProvider = ({ children }) => {
       setOrders(data);
     });
 
-    // 3. Subscribe to notifications
+    // 3. Subscribe to notifications with real-time browser alerts sync
+    let isInitialLoad = true;
+    const seenNotificationIds = new Set();
+
     const unsubNotifications = notificationService.subscribe((data) => {
       setNotifications(data);
+
+      if (isInitialLoad) {
+        data.forEach(n => {
+          if (n.id) seenNotificationIds.add(n.id);
+        });
+        isInitialLoad = false;
+        return;
+      }
+
+      const now = Date.now();
+      data.forEach(n => {
+        if (n.id && !seenNotificationIds.has(n.id)) {
+          seenNotificationIds.add(n.id);
+          const createdTime = new Date(n.createdAt).getTime();
+          const isRecent = (now - createdTime) < 60000;
+          if (isRecent) {
+            const event = new CustomEvent('hsp_fcm_notification', { detail: n });
+            window.dispatchEvent(event);
+          }
+        }
+      });
     });
 
     // 4. Subscribe to wishlist
@@ -101,17 +145,60 @@ export const AppProvider = ({ children }) => {
       setCoupons(data);
     });
 
-    // 6. In-App FCM notifications listener
+    // 6. In-App FCM + Native Browser notification listener (all three roles)
     const handleFCMAlert = (e) => {
       const noti = e.detail;
-      // Only show if notification is for this user or all
-      if (user && (noti.userId === 'all' || noti.userId === user.uid || (noti.userId === 'admin' && user.role === 'admin'))) {
-        setActiveToast(noti);
-        // Auto hide toast after 5 seconds
-        setTimeout(() => {
-          setActiveToast(null);
-        }, 5000);
+
+      // Determine if this notification targets the current user
+      const isForMe = user && (
+        noti.userId === 'all' ||                                            // broadcast
+        noti.userId === user.uid ||                                         // targeted by uid (customer / delivery)
+        (noti.userId === 'admin' && user.role === 'admin') ||              // admin-targeted
+        (noti.userId === 'delivery' && user.role === 'delivery')           // delivery role broadcast
+      );
+
+      if (!isForMe) return;
+
+      // Show in-app toast
+      setActiveToast(noti);
+
+      // Native HTML5 Notification (works when app is open but tab not focused)
+      if (typeof window !== 'undefined' && 'Notification' in window && Notification.permission === 'granted') {
+        try {
+          // Use Service Worker showNotification if available — works even when tab goes background
+          if (navigator.serviceWorker && navigator.serviceWorker.controller) {
+            navigator.serviceWorker.ready.then((reg) => {
+              reg.showNotification(noti.title || 'HSP Organics 🌿', {
+                body: noti.body || '',
+                icon: '/pwa-192x192.png',
+                badge: '/pwa-192x192.png',
+                tag: noti.id || `hsp-${Date.now()}`,
+                renotify: true,
+                vibrate: [200, 100, 200],
+                data: { url: noti.type === 'new_order' ? '/admin/orders' : '/orders' },
+                actions: [
+                  { action: 'open', title: '🛒 Open App' },
+                  { action: 'dismiss', title: '❌ Dismiss' }
+                ]
+              });
+            }).catch(console.error);
+          } else {
+            // Fallback: basic HTML5 Notification
+            new Notification(noti.title || 'HSP Organics 🌿', {
+              body: noti.body,
+              icon: '/pwa-192x192.png',
+              badge: '/pwa-192x192.png',
+              tag: noti.id || 'hsp-notification',
+              renotify: true
+            });
+          }
+        } catch (err) {
+          console.error('[HSP Notification] Native notification failed:', err);
+        }
       }
+
+      // Auto-dismiss toast after 6 seconds
+      setTimeout(() => setActiveToast(null), 6000);
     };
 
     window.addEventListener('hsp_fcm_notification', handleFCMAlert);
@@ -138,6 +225,11 @@ export const AppProvider = ({ children }) => {
       setDeliveryDistance(3.5); // Fallback
     }
   }, [selectedAddress, currentLocation]);
+
+  // Sync Cart to LocalStorage for persistence (until order placed)
+  useEffect(() => {
+    localStorage.setItem('hsp_cart', JSON.stringify(cart));
+  }, [cart]);
 
   // Theme Toggle
   const toggleTheme = () => {

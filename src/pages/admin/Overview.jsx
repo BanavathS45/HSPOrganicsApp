@@ -6,14 +6,14 @@ import {
 } from 'lucide-react';
 import { 
   Chart as ChartJS, CategoryScale, LinearScale, PointElement, 
-  LineElement, BarElement, Title, Tooltip, Legend, ArcElement 
+  LineElement, BarElement, Title, Tooltip, Legend, ArcElement, Filler
 } from 'chart.js';
 import { Line, Doughnut, Bar } from 'react-chartjs-2';
 
-// Register ChartJS modules
+// Register ChartJS modules including Filler for area fill support
 ChartJS.register(
-  CategoryScale, LinearScale, PointElement, LineElement, 
-  BarElement, Title, Tooltip, Legend, ArcElement
+  CategoryScale, LinearScale, PointElement, LineElement,
+  BarElement, Title, Tooltip, Legend, ArcElement, Filler
 );
 
 const Overview = () => {

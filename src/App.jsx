@@ -29,6 +29,10 @@ import Products from './pages/admin/Products';
 import AdminOrders from './pages/admin/Orders';
 import Coupons from './pages/admin/Coupons';
 import Notifications from './pages/admin/Notifications';
+import DeliveryBoys from './pages/admin/DeliveryBoys';
+
+// Delivery Agent Pages
+import DeliveryDashboard from './pages/delivery/Dashboard';
 
 // Global Components
 import GlassmorphicToast from './components/GlassmorphicToast';
@@ -99,9 +103,13 @@ function App() {
             <Route index element={<Overview />} />
             <Route path="products" element={<Products />} />
             <Route path="orders" element={<AdminOrders />} />
+            <Route path="delivery" element={<DeliveryBoys />} />
             <Route path="coupons" element={<Coupons />} />
             <Route path="notifications" element={<Notifications />} />
           </Route>
+
+          {/* Dedicated Delivery Agent Portal */}
+          <Route path="/delivery" element={<DeliveryDashboard />} />
 
           {/* Route Failover Redirects */}
           <Route path="*" element={<Navigate to="/" replace />} />

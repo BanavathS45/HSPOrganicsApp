@@ -201,6 +201,14 @@ const initLocalStorageDB = () => {
         displayName: 'John Doe',
         role: 'customer',
         photoURL: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=100&auto=format&fit=crop&q=80'
+      },
+      {
+        uid: 'delivery-default',
+        email: 'delivery@hsporganics.com',
+        displayName: 'Ramesh Kumar (Rider)',
+        role: 'delivery',
+        phone: '+91 98765 43210',
+        photoURL: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100&auto=format&fit=crop&q=80'
       }
     ]));
   }
@@ -332,12 +340,21 @@ export const authService = {
         const result = await signInWithEmailAndPassword(auth, email, password);
         const fu = result.user;
         const adminEmail = import.meta.env.VITE_ADMIN_EMAIL || 'admin@hsporganics.com';
+        let role = fu.email === adminEmail ? 'admin' : 'customer';
+        try {
+          const uSnap = await getDoc(doc(db, 'users', fu.uid));
+          if (uSnap.exists() && uSnap.data().role) {
+            role = uSnap.data().role;
+          }
+        } catch (e) {
+          console.warn("Error fetching user role:", e);
+        }
         const userObj = {
           uid: fu.uid,
           email: fu.email,
           displayName: fu.displayName || fu.email,
           photoURL: fu.photoURL || `https://ui-avatars.com/api/?name=${encodeURIComponent(fu.displayName || fu.email)}&background=2E7D32&color=fff`,
-          role: fu.email === adminEmail ? 'admin' : 'customer'
+          role
         };
         sessionStorage.setItem('hsp_session', JSON.stringify(userObj));
         return userObj;
@@ -350,10 +367,16 @@ export const authService = {
     const users = JSON.parse(localStorage.getItem('hsp_users') || '[]');
     const user  = users.find(u => u.email.toLowerCase() === email.toLowerCase());
     if (!user) {
-      throw new Error('User not found. Try customer@gmail.com or admin@hsporganics.com');
+      throw new Error('User not found. Try customer@gmail.com, delivery@hsporganics.com or admin@hsporganics.com');
     }
     if (email.toLowerCase().includes('admin') && password !== 'admin123') {
       throw new Error('Incorrect admin password. Hint: admin123');
+    }
+    if (email.toLowerCase().includes('delivery') && password !== 'delivery123') {
+      throw new Error('Incorrect delivery password. Hint: delivery123');
+    }
+    if (email.toLowerCase().includes('customer') && password !== 'customer123') {
+      throw new Error('Incorrect customer password. Hint: customer123');
     }
     sessionStorage.setItem('hsp_session', JSON.stringify(user));
     return user;
@@ -368,28 +391,41 @@ export const authService = {
     return true;
   },
 
-  // Listen for auth state changes (used in AppContext on mount)
   onAuthStateChanged: (callback) => {
     if (!isMock && auth) {
       return onAuthStateChanged(auth, (firebaseUser) => {
         if (firebaseUser) {
           const adminEmail = import.meta.env.VITE_ADMIN_EMAIL || 'admin@hsporganics.com';
-          callback({
-            uid: firebaseUser.uid,
-            email: firebaseUser.email,
-            displayName: firebaseUser.displayName || firebaseUser.email,
-            photoURL: firebaseUser.photoURL || `https://ui-avatars.com/api/?name=${encodeURIComponent(firebaseUser.displayName || firebaseUser.email)}&background=2E7D32&color=fff`,
-            role: firebaseUser.email === adminEmail ? 'admin' : 'customer'
+          let role = firebaseUser.email === adminEmail ? 'admin' : 'customer';
+          
+          getDoc(doc(db, 'users', firebaseUser.uid)).then((uSnap) => {
+            if (uSnap.exists() && uSnap.data().role) {
+              role = uSnap.data().role;
+            }
+            callback({
+              uid: firebaseUser.uid,
+              email: firebaseUser.email,
+              displayName: firebaseUser.displayName || firebaseUser.email,
+              photoURL: firebaseUser.photoURL || `https://ui-avatars.com/api/?name=${encodeURIComponent(firebaseUser.displayName || firebaseUser.email)}&background=2E7D32&color=fff`,
+              role
+            });
+          }).catch(() => {
+            callback({
+              uid: firebaseUser.uid,
+              email: firebaseUser.email,
+              displayName: firebaseUser.displayName || firebaseUser.email,
+              photoURL: firebaseUser.photoURL || `https://ui-avatars.com/api/?name=${encodeURIComponent(firebaseUser.displayName || firebaseUser.email)}&background=2E7D32&color=fff`,
+              role
+            });
           });
         } else {
           callback(null);
         }
       });
     }
-    // Mock: one-time call with current session
     const session = sessionStorage.getItem('hsp_session');
     callback(session ? JSON.parse(session) : null);
-    return () => {}; // no-op unsubscribe
+    return () => {};
   }
 };
 
@@ -836,6 +872,28 @@ export const orderService = {
     return orders[index];
   },
 
+  updateOrder: async (orderId, updatedFields) => {
+    if (!isMock && db) {
+      const oRef = doc(db, 'orders', orderId);
+      await updateDoc(oRef, updatedFields);
+      const oSnap = await getDoc(oRef);
+      return { id: orderId, ...oSnap.data() };
+    }
+
+    const orders = JSON.parse(localStorage.getItem('hsp_orders') || '[]');
+    const index = orders.findIndex(o => o.id === orderId);
+    if (index === -1) throw new Error("Order not found");
+
+    orders[index] = {
+      ...orders[index],
+      ...updatedFields
+    };
+
+    localStorage.setItem('hsp_orders', JSON.stringify(orders));
+    triggerCollectionChange('orders');
+    return orders[index];
+  },
+
   cleanupOldOrders: () => {
     // Only local storage has size limit restrictions requiring 30-day purge
     const raw = localStorage.getItem('hsp_orders');
@@ -1060,6 +1118,94 @@ export const couponService = {
     coupons = coupons.filter(c => c.id !== couponId);
     localStorage.setItem('hsp_coupons', JSON.stringify(coupons));
     triggerCollectionChange('coupons');
+    return true;
+  }
+};
+
+// 8. Delivery Boy Services
+export const deliveryBoyService = {
+  getAll: async () => {
+    if (!isMock && db) {
+      const q = query(collection(db, 'users'), where('role', '==', 'delivery'));
+      const querySnapshot = await getDocs(q);
+      const list = [];
+      querySnapshot.forEach((doc) => {
+        list.push({ id: doc.id, ...doc.data() });
+      });
+      return list;
+    }
+    const users = JSON.parse(localStorage.getItem('hsp_users') || '[]');
+    return users.filter(u => u.role === 'delivery');
+  },
+
+  subscribe: (callback) => {
+    if (!isMock && db) {
+      const q = query(collection(db, 'users'), where('role', '==', 'delivery'));
+      return onSnapshot(q, (snapshot) => {
+        const list = [];
+        snapshot.forEach((doc) => {
+          list.push({ id: doc.id, ...doc.data() });
+        });
+        callback(list);
+      });
+    }
+    return subscribeToLocalCollection('users', (usersList) => {
+      callback(usersList.filter(u => u.role === 'delivery'));
+    });
+  },
+
+  add: async (data) => {
+    const uid = 'db-' + Math.random().toString(36).substring(2, 9);
+    const newBoy = {
+      uid,
+      id: uid,
+      email: data.email,
+      displayName: data.name,
+      name: data.name,
+      phone: data.phone,
+      role: 'delivery',
+      photoURL: data.photoURL || `https://ui-avatars.com/api/?name=${encodeURIComponent(data.name)}&background=2E7D32&color=fff`,
+      createdAt: new Date().toISOString()
+    };
+
+    if (!isMock && db) {
+      await setDoc(doc(db, 'users', uid), newBoy);
+      return newBoy;
+    }
+
+    const users = JSON.parse(localStorage.getItem('hsp_users') || '[]');
+    users.push(newBoy);
+    localStorage.setItem('hsp_users', JSON.stringify(users));
+    triggerCollectionChange('users');
+    return newBoy;
+  },
+
+  update: async (id, updatedFields) => {
+    if (!isMock && db) {
+      const uRef = doc(db, 'users', id);
+      await updateDoc(uRef, updatedFields);
+      const snap = await getDoc(uRef);
+      return { id, ...snap.data() };
+    }
+
+    const users = JSON.parse(localStorage.getItem('hsp_users') || '[]');
+    const index = users.findIndex(u => u.uid === id || u.id === id);
+    if (index === -1) throw new Error("Delivery partner not found");
+    users[index] = { ...users[index], ...updatedFields };
+    localStorage.setItem('hsp_users', JSON.stringify(users));
+    triggerCollectionChange('users');
+    return users[index];
+  },
+
+  delete: async (id) => {
+    if (!isMock && db) {
+      await deleteDoc(doc(db, 'users', id));
+      return true;
+    }
+    const users = JSON.parse(localStorage.getItem('hsp_users') || '[]');
+    const filtered = users.filter(u => u.uid !== id && u.id !== id);
+    localStorage.setItem('hsp_users', JSON.stringify(filtered));
+    triggerCollectionChange('users');
     return true;
   }
 };
