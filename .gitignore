@@ -24,7 +24,7 @@ dist-ssr
 *.sw?
 
 # Environment Variables (Firebase secrets - NEVER commit these)
-.env
+# .env
 .env.local
 .env.production
 .env.development.local
