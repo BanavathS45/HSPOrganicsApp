@@ -136,7 +136,7 @@ const Products = () => {
           <h4 className="font-heading fw-extrabold text-success m-0">Product Catalog</h4>
           <span className="text-muted text-xs font-body">Manage organic inventory and pricing details</span>
         </div>
-        <button 
+        <button
           onClick={openAddModal}
           className="btn btn-organic d-flex align-items-center gap-1.5 shadow"
         >
@@ -168,9 +168,9 @@ const Products = () => {
                     {/* Item */}
                     <td className="px-4 py-3">
                       <div className="d-flex align-items-center gap-3">
-                        <img 
-                          src={p.image} 
-                          alt={p.name} 
+                        <img
+                          src={p.image}
+                          alt={p.name}
                           className="rounded-3 object-fit-cover border"
                           style={{ width: '48px', height: '48px' }}
                         />
@@ -180,16 +180,16 @@ const Products = () => {
                         </div>
                       </div>
                     </td>
-                    
+
                     {/* Category */}
                     <td className="py-3 fw-semibold text-secondary">{p.category}</td>
-                    
+
                     {/* Unit */}
                     <td className="py-3 text-muted">{p.unit}</td>
-                    
+
                     {/* Price */}
                     <td className="py-3 fw-bold text-dark">₹{p.price}</td>
-                    
+
                     {/* Stock status */}
                     <td className="py-3">
                       {isOutOfStock ? (
@@ -210,7 +210,7 @@ const Products = () => {
                     {/* Actions */}
                     <td className="py-3 text-center">
                       <div className="d-flex justify-content-center gap-1">
-                        <button 
+                        <button
                           onClick={() => openEditModal(p)}
                           className="btn btn-sm btn-outline-success p-1 rounded-circle d-flex align-items-center justify-content-center"
                           style={{ width: '28px', height: '28px' }}
@@ -218,7 +218,7 @@ const Products = () => {
                         >
                           <Edit2 size={13} />
                         </button>
-                        <button 
+                        <button
                           onClick={() => handleDelete(p.id)}
                           className="btn btn-sm btn-outline-danger p-1 rounded-circle d-flex align-items-center justify-content-center"
                           style={{ width: '28px', height: '28px' }}
@@ -238,7 +238,7 @@ const Products = () => {
 
       {/* CRUD Add/Edit Product Modal — rendered via portal to escape overflow:hidden parent */}
       {showModal && ReactDOM.createPortal(
-        <div 
+        <div
           style={{
             position: 'fixed', top: 0, left: 0,
             width: '100vw', height: '100vh',
@@ -256,7 +256,7 @@ const Products = () => {
         >
           <div style={{ width: '100%', maxWidth: '720px', margin: '0 16px' }}>
             <div className="modal-content border-0 text-start shadow-lg" style={{ borderRadius: '20px', background: 'var(--bg-card, #fff)', maxHeight: 'none' }}>
-              
+
               {/* Modal Header */}
               <div className="modal-header border-0 px-4 pt-4 pb-2 d-flex align-items-center justify-content-between"
                 style={{ background: 'linear-gradient(135deg, #1B5E20 0%, #2E7D32 100%)', borderRadius: '20px 20px 0 0' }}
@@ -274,9 +274,9 @@ const Products = () => {
                     </span>
                   </div>
                 </div>
-                <button 
-                  type="button" 
-                  className="btn-close btn-close-white" 
+                <button
+                  type="button"
+                  className="btn-close btn-close-white"
                   onClick={() => setShowModal(false)}
                   aria-label="Close modal"
                 ></button>
@@ -285,26 +285,26 @@ const Products = () => {
               <form onSubmit={handleSubmit}>
                 <div className="modal-body px-4 py-4" style={{ maxHeight: '62vh', overflowY: 'auto', overflowX: 'hidden' }}>
                   <div className="row g-3">
-                    
+
                     {/* Product Name */}
                     <div className="col-md-6">
                       <label className="form-label fw-semibold text-xs" style={{ color: 'var(--text-secondary, #555)' }}>Product Name *</label>
-                      <input 
-                        type="text" 
-                        placeholder="e.g. Fresh Red Tomatoes" 
-                        className="form-control form-control-organic" 
-                        value={name} 
+                      <input
+                        type="text"
+                        placeholder="e.g. Fresh Red Tomatoes"
+                        className="form-control form-control-organic"
+                        value={name}
                         onChange={(e) => setName(e.target.value)}
-                        required 
+                        required
                       />
                     </div>
 
                     {/* Category */}
                     <div className="col-md-6">
                       <label className="form-label fw-semibold text-xs" style={{ color: 'var(--text-secondary, #555)' }}>Category *</label>
-                      <select 
-                        className="form-select form-control-organic" 
-                        value={category} 
+                      <select
+                        className="form-select form-control-organic"
+                        value={category}
                         onChange={(e) => setCategory(e.target.value)}
                       >
                         <option value="Vegetables">🥦 Vegetables</option>
@@ -319,13 +319,13 @@ const Products = () => {
                     {/* Unit */}
                     <div className="col-md-4">
                       <label className="form-label fw-semibold text-xs" style={{ color: 'var(--text-secondary, #555)' }}>Unit / Weight *</label>
-                      <input 
-                        type="text" 
-                        placeholder="e.g. 500g, 1kg, 1L" 
-                        className="form-control form-control-organic" 
-                        value={unit} 
+                      <input
+                        type="text"
+                        placeholder="e.g. 500g, 1kg, 1L"
+                        className="form-control form-control-organic"
+                        value={unit}
                         onChange={(e) => setUnit(e.target.value)}
-                        required 
+                        required
                       />
                     </div>
 
@@ -334,15 +334,15 @@ const Products = () => {
                       <label className="form-label fw-semibold text-xs" style={{ color: 'var(--text-secondary, #555)' }}>Price (₹) *</label>
                       <div className="input-group">
                         <span className="input-group-text bg-success-subtle text-success fw-bold border-0" style={{ borderRadius: '10px 0 0 10px' }}>₹</span>
-                        <input 
-                          type="number" 
-                          min="1" 
-                          placeholder="0.00" 
-                          className="form-control form-control-organic" 
+                        <input
+                          type="number"
+                          min="1"
+                          placeholder="0.00"
+                          className="form-control form-control-organic"
                           style={{ borderRadius: '0 10px 10px 0', borderLeft: 0 }}
-                          value={price} 
+                          value={price}
                           onChange={(e) => setPrice(e.target.value)}
-                          required 
+                          required
                         />
                       </div>
                     </div>
@@ -350,31 +350,30 @@ const Products = () => {
                     {/* Stock */}
                     <div className="col-md-4">
                       <label className="form-label fw-semibold text-xs" style={{ color: 'var(--text-secondary, #555)' }}>Stock Quantity *</label>
-                      <input 
-                        type="number" 
-                        min="0" 
-                        placeholder="e.g. 50" 
-                        className="form-control form-control-organic" 
-                        value={stock} 
+                      <input
+                        type="number"
+                        min="0"
+                        placeholder="e.g. 50"
+                        className="form-control form-control-organic"
+                        value={stock}
                         onChange={(e) => setStock(e.target.value)}
-                        required 
+                        required
                       />
                     </div>
 
                     {/* Image Source Toggle */}
                     <div className="col-12">
                       <label className="form-label fw-semibold text-xs mb-2" style={{ color: 'var(--text-secondary, #555)' }}>Product Image *</label>
-                      
+
                       {/* Toggle Tabs */}
                       <div className="d-flex gap-2 mb-3">
                         <button
                           type="button"
                           onClick={() => { setImageSourceType('url'); }}
-                          className={`btn btn-sm d-flex align-items-center gap-1.5 rounded-pill px-3 ${
-                            imageSourceType === 'url' 
-                              ? 'btn-success text-white shadow-sm' 
+                          className={`btn btn-sm d-flex align-items-center gap-1.5 rounded-pill px-3 ${imageSourceType === 'url'
+                              ? 'btn-success text-white shadow-sm'
                               : 'btn-outline-secondary'
-                          }`}
+                            }`}
                           style={{ fontSize: '12px' }}
                         >
                           <Link size={13} /> Paste URL
@@ -382,11 +381,10 @@ const Products = () => {
                         <button
                           type="button"
                           onClick={() => { setImageSourceType('local'); }}
-                          className={`btn btn-sm d-flex align-items-center gap-1.5 rounded-pill px-3 ${
-                            imageSourceType === 'local' 
-                              ? 'btn-success text-white shadow-sm' 
+                          className={`btn btn-sm d-flex align-items-center gap-1.5 rounded-pill px-3 ${imageSourceType === 'local'
+                              ? 'btn-success text-white shadow-sm'
                               : 'btn-outline-secondary'
-                          }`}
+                            }`}
                           style={{ fontSize: '12px' }}
                         >
                           <Upload size={13} /> Upload File
@@ -395,11 +393,11 @@ const Products = () => {
 
                       {/* URL Input */}
                       {imageSourceType === 'url' && (
-                        <input 
-                          type="url" 
-                          placeholder="https://images.unsplash.com/photo-..." 
-                          className="form-control form-control-organic" 
-                          value={!image.startsWith('data:') ? image : ''} 
+                        <input
+                          type="url"
+                          placeholder="https://images.unsplash.com/photo-..."
+                          className="form-control form-control-organic"
+                          value={!image.startsWith('data:') ? image : ''}
                           onChange={(e) => setImage(e.target.value)}
                         />
                       )}
@@ -407,10 +405,10 @@ const Products = () => {
                       {/* File Upload Input */}
                       {imageSourceType === 'local' && (
                         <div>
-                          <input 
-                            type="file" 
-                            accept="image/jpeg,image/png,image/webp,image/gif" 
-                            className="form-control form-control-organic" 
+                          <input
+                            type="file"
+                            accept="image/jpeg,image/png,image/webp,image/gif"
+                            className="form-control form-control-organic"
                             onChange={handleImageUpload}
                           />
                           <small className="text-muted font-body" style={{ fontSize: '11px' }}>Max file size: 2MB. JPEG, PNG, WebP supported.</small>
@@ -428,12 +426,12 @@ const Products = () => {
                         <div className="mt-3 p-3 rounded-3 d-flex align-items-center gap-3"
                           style={{ background: '#f0fdf4', border: '1.5px solid #86efac' }}
                         >
-                          <img 
-                            src={image} 
-                            alt="Preview" 
+                          <img
+                            src={image}
+                            alt="Preview"
                             className="rounded-3 object-fit-cover"
                             style={{ width: '72px', height: '72px', border: '2px solid #4ade80' }}
-                            onError={(e) => { e.target.style.display='none'; }}
+                            onError={(e) => { e.target.style.display = 'none'; }}
                           />
                           <div className="flex-grow-1">
                             <div className="d-flex align-items-center gap-1.5 mb-1">
@@ -444,8 +442,8 @@ const Products = () => {
                               {image.startsWith('data:') ? 'Local file uploaded successfully' : 'Image URL registered'}
                             </span>
                           </div>
-                          <button 
-                            type="button" 
+                          <button
+                            type="button"
                             className="btn btn-sm btn-outline-danger rounded-circle p-1 d-flex align-items-center justify-content-center"
                             style={{ width: '28px', height: '28px' }}
                             onClick={() => setImage('')}
@@ -460,11 +458,11 @@ const Products = () => {
                     {/* Description */}
                     <div className="col-12">
                       <label className="form-label fw-semibold text-xs" style={{ color: 'var(--text-secondary, #555)' }}>Product Description</label>
-                      <textarea 
-                        rows="3" 
-                        placeholder="Enter features, health benefits, taste profile..." 
-                        className="form-control form-control-organic" 
-                        value={description} 
+                      <textarea
+                        rows="3"
+                        placeholder="Enter features, health benefits, taste profile..."
+                        className="form-control form-control-organic"
+                        value={description}
                         onChange={(e) => setDescription(e.target.value)}
                       ></textarea>
                     </div>
@@ -472,11 +470,11 @@ const Products = () => {
                     {/* Organic Info */}
                     <div className="col-12">
                       <label className="form-label fw-semibold text-xs" style={{ color: 'var(--text-secondary, #555)' }}>Organic Farming Information</label>
-                      <input 
-                        type="text" 
-                        placeholder="e.g. Cultivated using compost manure, zero pesticides." 
-                        className="form-control form-control-organic" 
-                        value={organicInfo} 
+                      <input
+                        type="text"
+                        placeholder="e.g. Cultivated using compost manure, zero pesticides."
+                        className="form-control form-control-organic"
+                        value={organicInfo}
                         onChange={(e) => setOrganicInfo(e.target.value)}
                       />
                     </div>
@@ -485,19 +483,19 @@ const Products = () => {
 
                 {/* Modal Footer */}
                 <div className="modal-footer border-0 px-4 pb-4 pt-2 d-flex gap-2">
-                  <button 
-                    type="button" 
-                    onClick={() => setShowModal(false)} 
+                  <button
+                    type="button"
+                    onClick={() => setShowModal(false)}
                     className="btn btn-light rounded-pill px-4 fw-semibold"
                     style={{ fontSize: '14px' }}
                   >
                     Cancel
                   </button>
-                  <button 
-                    type="submit" 
-                    disabled={savingProduct || uploadingImage || !image} 
+                  <button
+                    type="submit"
+                    disabled={savingProduct || uploadingImage || !image}
                     className="btn btn-success flex-grow-1 d-flex align-items-center justify-content-center gap-2 rounded-pill fw-bold shadow"
-                    style={{ fontSize: '14px', background: 'linear-gradient(135deg, #2E7D32, #43A047)' }}
+                    style={{ fontSize: '14px', background: 'linear-gradient(135deg, #2E7D32, #43A047)', color: "white" }}
                   >
                     {savingProduct ? (
                       <>

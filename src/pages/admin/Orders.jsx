@@ -1,16 +1,16 @@
 import React, { useState } from 'react';
 import { useApp } from '../../context/AppContext';
 import { orderService, notificationService } from '../../firebase/db';
-import { 
-  Check, X, Truck, Package, MessageCircle, MapPin, 
-  MapIcon, Bell, ArrowRight, ClipboardCheck 
+import {
+  Check, X, Truck, Package, MessageCircle, MapPin,
+  MapIcon, Bell, ArrowRight, ClipboardCheck
 } from 'lucide-react';
 import DeliveryMap from '../../components/DeliveryMap';
 
 const Orders = () => {
   const { orders } = useApp();
   const [selectedOrder, setSelectedOrder] = useState(null);
-  
+
   // Manual Notification Form State
   const [customNotification, setCustomNotification] = useState('');
   const [notiLoading, setNotiLoading] = useState(false);
@@ -83,9 +83,9 @@ const Orders = () => {
               <div className="d-flex flex-column gap-2.5" style={{ maxHeight: '520px', overflowY: 'auto' }}>
                 {orders.map((ord) => {
                   const isSelected = selectedOrder?.id === ord.id;
-                  
+
                   return (
-                    <div 
+                    <div
                       key={ord.id}
                       onClick={() => setSelectedOrder(ord)}
                       className={`p-3 rounded-4 border cursor-pointer transition-normal ${isSelected ? 'border-success bg-success-subtle' : 'border-light-subtle'}`}
@@ -127,7 +127,7 @@ const Orders = () => {
         <div className="col-12 col-lg-5 text-start">
           {selectedOrder ? (
             <div className="d-flex flex-column gap-3">
-              
+
               {/* Order Overview Detail */}
               <div className="card border-0 glass-card p-3 rounded-4 shadow-sm">
                 <div className="d-flex justify-content-between align-items-center mb-3">
@@ -172,16 +172,16 @@ const Orders = () => {
                 {/* Status Lifecyle Controls */}
                 <div className="border-top pt-3">
                   <h6 className="font-heading fw-bold text-secondary text-xs mb-3">Status Lifecycle Actions:</h6>
-                  
+
                   {selectedOrder.status === 'Pending' && (
                     <div className="d-flex gap-2">
-                      <button 
+                      <button
                         onClick={() => handleUpdateStatus(selectedOrder.id, 'Accepted')}
                         className="btn btn-success btn-sm rounded-pill flex-grow-1 font-heading fw-bold d-flex align-items-center justify-content-center gap-1.5 py-1.5"
                       >
                         <Check size={14} /> Accept Order
                       </button>
-                      <button 
+                      <button
                         onClick={() => handleUpdateStatus(selectedOrder.id, 'Cancelled')}
                         className="btn btn-outline-danger btn-sm rounded-pill flex-grow-1 font-heading fw-bold d-flex align-items-center justify-content-center gap-1.5 py-1.5"
                       >
@@ -191,29 +191,29 @@ const Orders = () => {
                   )}
 
                   {selectedOrder.status !== 'Pending' && selectedOrder.status !== 'Delivered' && selectedOrder.status !== 'Cancelled' && (
-                    <div className="d-flex flex-column gap-2">
+                    <div className="d-flex flex-column gap-2 ">
                       <span className="text-xs text-muted mb-1">Advance order state:</span>
                       <div className="d-flex gap-2">
                         {selectedOrder.status === 'Accepted' && (
-                          <button 
+                          <button
                             onClick={() => handleUpdateStatus(selectedOrder.id, 'Preparing')}
-                            className="btn btn-success btn-sm rounded-pill w-100 font-heading fw-bold py-1.5"
+                            className="btn btn-success btn-sm rounded-pill w-100 font-heading fw-bold py-1.5 text-white"
                           >
                             Mark As Preparing
                           </button>
                         )}
                         {selectedOrder.status === 'Preparing' && (
-                          <button 
+                          <button
                             onClick={() => handleUpdateStatus(selectedOrder.id, 'Out for Delivery')}
-                            className="btn btn-success btn-sm rounded-pill w-100 font-heading fw-bold py-1.5"
+                            className="btn btn-success btn-sm rounded-pill w-100 font-heading fw-bold py-1.5 text-white"
                           >
                             Mark Out for Delivery
                           </button>
                         )}
                         {selectedOrder.status === 'Out for Delivery' && (
-                          <button 
+                          <button
                             onClick={() => handleUpdateStatus(selectedOrder.id, 'Delivered')}
-                            className="btn btn-success btn-sm rounded-pill w-100 font-heading fw-bold py-1.5"
+                            className="btn btn-success btn-sm rounded-pill w-100 font-heading fw-bold py-1.5 text-white"
                           >
                             Mark As Delivered
                           </button>
@@ -240,16 +240,16 @@ const Orders = () => {
                 </p>
 
                 <form onSubmit={handleSendNotification} className="d-flex flex-column gap-2">
-                  <textarea 
-                    rows="2" 
-                    placeholder="e.g. Your delivery agent is reaching in 5 mins. Please keep cash ready!" 
+                  <textarea
+                    rows="2"
+                    placeholder="e.g. Your delivery agent is reaching in 5 mins. Please keep cash ready!"
                     className="form-control form-control-organic text-xs py-2"
                     value={customNotification}
                     onChange={(e) => setCustomNotification(e.target.value)}
                     required
                   ></textarea>
-                  <button 
-                    type="submit" 
+                  <button
+                    type="submit"
                     disabled={notiLoading}
                     className="btn btn-organic btn-sm rounded-pill d-flex align-items-center justify-content-center gap-1.5 py-1.5 font-heading fw-bold"
                   >

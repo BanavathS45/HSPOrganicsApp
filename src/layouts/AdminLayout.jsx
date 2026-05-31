@@ -2,9 +2,9 @@ import React, { useEffect } from 'react';
 import { useApp } from '../context/AppContext';
 import { useNavigate, NavLink, Outlet } from 'react-router-dom';
 import { isMock } from '../firebase/config';
-import { 
-  LayoutDashboard, ShoppingCart, Users, Ticket, 
-  Bell, Settings, LogOut, ShieldAlert, ArrowLeft 
+import {
+  LayoutDashboard, ShoppingCart, Users, Ticket,
+  Bell, Settings, LogOut, ShieldAlert, ArrowLeft
 } from 'lucide-react';
 
 const AdminLayout = () => {
@@ -39,7 +39,7 @@ const AdminLayout = () => {
   return (
     <div className="d-flex min-vh-100 text-start" style={{ backgroundColor: 'var(--bg-app)' }}>
       {/* 1. Sidebar */}
-      <aside 
+      <aside
         className="d-none d-md-flex flex-column flex-shrink-0 p-3 text-white sticky-top"
         style={{
           width: '260px',
@@ -50,15 +50,16 @@ const AdminLayout = () => {
       >
         {/* Sidebar Brand Header */}
         <div className="d-flex align-items-center gap-2 mb-4 pb-3 border-bottom" style={{ borderColor: 'rgba(255,255,255,0.1)' }}>
-          <div className="bg-success text-white p-2 rounded-circle d-flex align-items-center justify-content-center" style={{ width: '38px', height: '38px', backgroundColor: '#388E3C !important' }}>
-            <ShieldAlert size={20} />
+          <div className="bg-white text-white p-2 rounded-circle d-flex align-items-center justify-content-center" style={{ width: '38px', height: '38px', backgroundColor: '#388E3C !important' }}>
+            {/* <ShieldAlert size={20} /> */}
+            <img src='/logo.png' alt='logo' style={{ width: '38px', height: '38px', }} />
           </div>
           <div>
             <div className="d-flex align-items-center gap-1.5">
               <h5 className="m-0 font-heading fw-extrabold" style={{ letterSpacing: '-0.5px' }}>
                 HSP Admin
               </h5>
-              <span 
+              <span
                 className={`badge px-1.5 py-0.5 rounded-pill font-heading ${isMock ? 'bg-warning text-dark' : 'bg-success text-white'}`}
                 style={{ fontSize: '7.5px', textTransform: 'uppercase', letterSpacing: '0.3px' }}
               >
@@ -75,8 +76,8 @@ const AdminLayout = () => {
         <ul className="nav nav-pills flex-column mb-auto gap-1">
           {navLinks.map((link) => (
             <li key={link.to} className="nav-item">
-              <NavLink 
-                to={link.to} 
+              <NavLink
+                to={link.to}
                 end={link.end}
                 className={({ isActive }) => `nav-link d-flex align-items-center gap-2.5 px-3 py-2.5 rounded-3 text-white transition-normal ${isActive ? 'bg-success fw-bold' : 'hover-expand'}`}
                 style={({ isActive }) => ({
@@ -93,10 +94,10 @@ const AdminLayout = () => {
         {/* Sidebar Footer User Details */}
         <div className="pt-3 border-top mt-auto" style={{ borderColor: 'rgba(255,255,255,0.1)' }}>
           <div className="d-flex align-items-center gap-2.5 mb-3">
-            <img 
-              src={user.photoURL} 
-              alt={user.displayName} 
-              className="rounded-circle border border-success" 
+            <img
+              src={user.photoURL}
+              alt={user.displayName}
+              className="rounded-circle border border-success"
               style={{ width: '40px', height: '40px', objectFit: 'cover' }}
             />
             <div className="text-truncate">
@@ -108,9 +109,9 @@ const AdminLayout = () => {
               </span>
             </div>
           </div>
-          
-          <button 
-            onClick={handleLogout} 
+
+          <button
+            onClick={handleLogout}
             className="btn btn-outline-light w-100 py-1.5 rounded-3 font-heading fw-semibold d-flex align-items-center justify-content-center gap-2"
             style={{ fontSize: '13px' }}
           >
@@ -122,7 +123,7 @@ const AdminLayout = () => {
       {/* 2. Main Content Body Area */}
       <div className="flex-grow-1 d-flex flex-column min-vh-100" style={{ overflowX: 'hidden' }}>
         {/* Top Navbar */}
-        <header 
+        <header
           className="navbar navbar-expand navbar-light bg-white sticky-top px-4 py-2.5 border-bottom"
           style={{
             zIndex: 1010,
@@ -133,19 +134,20 @@ const AdminLayout = () => {
             <h4 className="m-0 font-heading fw-extrabold text-success d-md-block d-none">
               Console Overview
             </h4>
-            
+
             {/* Mobile Header Brand */}
             <div className="d-md-none d-flex align-items-center gap-2">
               <div className="bg-success text-white p-1.5 rounded-circle">
                 <ShieldAlert size={16} />
+                {/* <img src='/logo.png' alt='logo' /> */}
               </div>
               <h5 className="m-0 font-heading fw-bold text-success" style={{ fontSize: '16px' }}>HSP Console</h5>
             </div>
 
             <div className="d-flex align-items-center gap-3">
               {/* Back to Client Storefront button */}
-              <NavLink 
-                to="/" 
+              <NavLink
+                to="/"
                 className="btn btn-outline-success btn-sm rounded-pill font-heading fw-bold d-flex align-items-center gap-1.5 px-3"
                 style={{ fontSize: '12px' }}
               >
@@ -153,8 +155,8 @@ const AdminLayout = () => {
               </NavLink>
 
               {/* Theme toggle */}
-              <button 
-                onClick={toggleTheme} 
+              <button
+                onClick={toggleTheme}
                 className="btn btn-light rounded-circle p-2 d-flex align-items-center justify-content-center"
                 style={{ width: '36px', height: '36px' }}
               >
@@ -162,10 +164,10 @@ const AdminLayout = () => {
               </button>
 
               {/* Admin Avatar */}
-              <img 
-                src={user.photoURL} 
-                alt={user.displayName} 
-                className="rounded-circle d-md-block d-none" 
+              <img
+                src={user.photoURL}
+                alt={user.displayName}
+                className="rounded-circle d-md-block d-none"
                 style={{ width: '36px', height: '36px', objectFit: 'cover' }}
               />
             </div>
@@ -176,9 +178,9 @@ const AdminLayout = () => {
         <div className="d-md-none bg-white py-2 px-3 border-bottom">
           <div className="d-flex gap-1.5 overflow-x-auto" style={{ scrollbarWidth: 'none' }}>
             {navLinks.map((link) => (
-              <NavLink 
-                key={link.to} 
-                to={link.to} 
+              <NavLink
+                key={link.to}
+                to={link.to}
                 end={link.end}
                 className={({ isActive }) => `btn btn-xs rounded-pill px-3 py-1 font-heading fw-bold text-nowrap ${isActive ? 'btn-success text-white shadow-sm' : 'btn-light border text-secondary'}`}
                 style={{ fontSize: '11px' }}
@@ -186,8 +188,8 @@ const AdminLayout = () => {
                 {link.label}
               </NavLink>
             ))}
-            <button 
-              onClick={handleLogout} 
+            <button
+              onClick={handleLogout}
               className="btn btn-xs btn-outline-danger rounded-pill px-3 py-1 font-heading fw-bold text-nowrap"
               style={{ fontSize: '11px' }}
             >
