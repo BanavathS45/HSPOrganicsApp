@@ -2,9 +2,9 @@ import React, { useState, useMemo } from 'react';
 import { useApp } from '../../context/AppContext';
 import ProductCard from '../../components/ProductCard';
 import ProductDetailsModal from '../../components/ProductDetailsModal';
-import { 
-  Search, SlidersHorizontal, Sparkles, Flame, Percent, 
-  MessageCircle, Mic, HelpCircle, CheckCircle2, ChevronRight 
+import {
+  Search, SlidersHorizontal, Sparkles, Flame, Percent,
+  MessageCircle, Mic, HelpCircle, CheckCircle2, ChevronRight
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
@@ -71,8 +71,8 @@ const Home = () => {
   // Filtered products list
   const filteredProducts = useMemo(() => {
     return products.filter(p => {
-      const matchesSearch = p.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
-                            p.description.toLowerCase().includes(searchQuery.toLowerCase());
+      const matchesSearch = p.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        p.description.toLowerCase().includes(searchQuery.toLowerCase());
       const matchesCategory = selectedCategory === 'All' || p.category === selectedCategory;
       const matchesPrice = p.price <= maxPrice;
       const matchesStock = !onlyAvailable || p.stock > 0;
@@ -87,12 +87,12 @@ const Home = () => {
   // WhatsApp Order helper
   const handleWhatsAppOrder = () => {
     const text = encodeURIComponent("Hello HSP Organics! I'd like to place an order for fresh farm-grown vegetables and fruits. Please send me today's price catalog.");
-    window.open(`https://wa.me/919999999999?text=${text}`, '_blank');
+    window.open(`https://wa.me/917842259803?text=${text}`, '_blank');
   };
 
   return (
     <div className="container-fluid pb-5 pt-2 px-3 animate-fade-in-up" style={{ paddingBottom: '90px' }}>
-      
+
       {/* 1. Header Slogan Banner */}
       <div className="text-center py-2 mb-3 bg-success-subtle rounded-3" style={{ background: 'var(--accent-green-bg)' }}>
         <span className="text-success fw-bold font-heading text-xs">
@@ -101,7 +101,7 @@ const Home = () => {
       </div>
 
       {/* 2. Banner Slider */}
-      <div 
+      <div
         className="position-relative overflow-hidden mb-4 shadow-sm"
         style={{
           borderRadius: '24px',
@@ -124,7 +124,7 @@ const Home = () => {
             </p>
             <div className="mt-2 d-flex align-items-center gap-2">
               <span className="text-xs font-body opacity-90">Code: <strong>{banners[activeSlide].code}</strong></span>
-              <button 
+              <button
                 onClick={() => {
                   applyCoupon(banners[activeSlide].code);
                   alert(`Coupon ${banners[activeSlide].code} activated! Go to checkout to save.`);
@@ -137,10 +137,10 @@ const Home = () => {
             </div>
           </div>
           <div className="h-100 d-flex align-items-center">
-            <img 
-              src={banners[activeSlide].img} 
-              alt={banners[activeSlide].title} 
-              className="rounded-4 object-fit-cover shadow-sm" 
+            <img
+              src={banners[activeSlide].img}
+              alt={banners[activeSlide].title}
+              className="rounded-4 object-fit-cover shadow-sm"
               style={{ width: '100px', height: '100px' }}
             />
           </div>
@@ -149,8 +149,8 @@ const Home = () => {
         {/* Carousel indicators */}
         <div className="position-absolute bottom-2 start-50 translate-middle-x d-flex gap-1" style={{ bottom: '8px' }}>
           {banners.map((_, idx) => (
-            <div 
-              key={idx} 
+            <div
+              key={idx}
               onClick={() => setActiveSlide(idx)}
               className={`rounded-circle cursor-pointer`}
               style={{
@@ -170,16 +170,16 @@ const Home = () => {
             <span className="position-absolute top-50 translate-middle-y start-3 text-muted" style={{ left: '16px' }}>
               <Search size={18} />
             </span>
-            <input 
-              type="text" 
-              placeholder="Search spinach, apples, organic oils..." 
-              className="form-control form-control-organic w-100 py-2 ps-5 text-dark" 
+            <input
+              type="text"
+              placeholder="Search apples, organic oils..."
+              className="form-control form-control-organic w-100 py-2 ps-5 text-dark"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
             />
             {/* Voice Search button inside bar */}
-            <button 
-              onClick={handleVoiceSearch} 
+            <button
+              onClick={handleVoiceSearch}
               className="position-absolute top-50 translate-middle-y end-3 border-0 bg-transparent text-muted p-1"
               style={{ right: '16px' }}
               title="Voice Search"
@@ -187,10 +187,10 @@ const Home = () => {
               <Mic size={18} className={voiceActive ? 'text-success pulse-animation' : ''} />
             </button>
           </div>
-          
+
           {/* Filters Toggle Button */}
-          <button 
-            onClick={() => setShowFilters(!showFilters)} 
+          <button
+            onClick={() => setShowFilters(!showFilters)}
             className={`btn rounded-4 border px-3 d-flex align-items-center justify-content-center transition-normal ${showFilters ? 'btn-success text-white' : 'btn-light text-secondary'}`}
             style={{ borderRadius: '16px' }}
           >
@@ -205,21 +205,21 @@ const Home = () => {
             <div className="row g-3">
               <div className="col-6">
                 <label className="form-label text-xs text-secondary fw-semibold">Max Price: ₹{maxPrice}</label>
-                <input 
-                  type="range" 
-                  min="30" 
-                  max="1000" 
-                  step="10" 
-                  className="form-range" 
-                  value={maxPrice} 
-                  onChange={(e) => setMaxPrice(parseInt(e.target.value))} 
+                <input
+                  type="range"
+                  min="30"
+                  max="1000"
+                  step="10"
+                  className="form-range"
+                  value={maxPrice}
+                  onChange={(e) => setMaxPrice(parseInt(e.target.value))}
                 />
               </div>
               <div className="col-6 d-flex align-items-center">
                 <div className="form-check form-switch mt-3">
-                  <input 
-                    className="form-check-input" 
-                    type="checkbox" 
+                  <input
+                    className="form-check-input"
+                    type="checkbox"
                     id="stockSwitch"
                     checked={onlyAvailable}
                     onChange={(e) => setOnlyAvailable(e.target.checked)}
@@ -231,19 +231,19 @@ const Home = () => {
               </div>
             </div>
             <div className="mt-3 d-flex justify-content-end gap-2">
-              <button 
+              <button
                 onClick={() => {
                   setMaxPrice(1000);
                   setOnlyAvailable(false);
                   setSearchQuery('');
                   setSelectedCategory('All');
-                }} 
+                }}
                 className="btn btn-sm btn-light rounded-pill px-3"
               >
                 Reset
               </button>
-              <button 
-                onClick={() => setShowFilters(false)} 
+              <button
+                onClick={() => setShowFilters(false)}
                 className="btn btn-sm btn-success rounded-pill px-3"
               >
                 Apply Filters
@@ -279,7 +279,7 @@ const Home = () => {
             <h5 className="font-heading fw-bold text-success m-0">Filtered Catalog</h5>
             <span className="badge bg-success-subtle text-success">{filteredProducts.length} Results</span>
           </div>
-          
+
           {filteredProducts.length === 0 ? (
             <div className="text-center py-5 bg-white rounded-4 border">
               <HelpCircle className="text-muted mb-2 mx-auto" size={36} />
@@ -298,7 +298,7 @@ const Home = () => {
       ) : (
         // Standard Blinkit Home Structure (Sliders + Bestsellers + Offer items)
         <div className="animate-fade-in-up">
-          
+
           {/* Featured Rows */}
           <div className="text-start mb-4">
             <div className="d-flex justify-content-between align-items-center mb-3">
@@ -338,8 +338,8 @@ const Home = () => {
           </div>
 
           {/* 5. Special Offer Promo Banner */}
-          <div 
-            className="p-4 rounded-4 mb-4 text-start text-white position-relative overflow-hidden" 
+          <div
+            className="p-4 rounded-4 mb-4 text-start text-white position-relative overflow-hidden"
             style={{
               background: 'linear-gradient(135deg, var(--organic-brown) 0%, var(--organic-brown-light) 100%)',
             }}
@@ -353,11 +353,11 @@ const Home = () => {
               <p className="font-body text-xs mb-3 text-white-50">
                 Extracted from fresh handpicked sulphur-free coconuts using wood mills (Kachi Ghani). Retains complete nutrients.
               </p>
-              <button 
+              <button
                 onClick={() => {
                   const o = products.find(p => p.id === 'prod-oil-1');
                   if (o) setSelectedProduct(o);
-                }} 
+                }}
                 className="btn btn-sm btn-light text-success rounded-pill fw-bold"
               >
                 View Deal
@@ -384,7 +384,7 @@ const Home = () => {
           </div>
 
           {/* 7. Extra Feature: WhatsApp Ordering and Assistance */}
-          <div 
+          <div
             className="p-3 rounded-4 border d-flex justify-content-between align-items-center mb-5 cursor-pointer hover-expand"
             style={{
               backgroundColor: 'rgba(37, 211, 102, 0.08)',
@@ -413,9 +413,9 @@ const Home = () => {
 
       {/* Product Details Modal */}
       {selectedProduct && (
-        <ProductDetailsModal 
-          product={selectedProduct} 
-          onClose={() => setSelectedProduct(null)} 
+        <ProductDetailsModal
+          product={selectedProduct}
+          onClose={() => setSelectedProduct(null)}
           onNavigateToCart={() => {
             setSelectedProduct(null);
             navigate('/cart');

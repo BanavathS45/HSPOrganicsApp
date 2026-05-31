@@ -1,17 +1,17 @@
 import React, { useState } from 'react';
 import { useApp } from '../../context/AppContext';
 import { useNavigate, Link } from 'react-router-dom';
-import { 
-  Trash2, MapPin, Tag, ChevronRight, ShoppingBag, 
-  MapIcon, ShieldCheck, Ticket, Plus, Minus 
+import {
+  Trash2, MapPin, Tag, ChevronRight, ShoppingBag,
+  MapIcon, ShieldCheck, Ticket, Plus, Minus
 } from 'lucide-react';
 import AddressSelectionModal from '../../components/AddressSelectionModal';
 
 const Cart = () => {
-  const { 
-    user, cart, updateCartQuantity, removeFromCart, cartSubtotal, 
-    deliveryCharge, discountAmount, cartTotal, coupons, activeCoupon, 
-    applyCoupon, removeCoupon, selectedAddress, deliveryDistance, placeOrder 
+  const {
+    user, cart, updateCartQuantity, removeFromCart, cartSubtotal,
+    deliveryCharge, discountAmount, cartTotal, coupons, activeCoupon,
+    applyCoupon, removeCoupon, selectedAddress, deliveryDistance, placeOrder
   } = useApp();
 
   const navigate = useNavigate();
@@ -48,7 +48,7 @@ const Cart = () => {
       setShowAddressModal(true);
       return;
     }
-    
+
     setCheckoutLoading(true);
     try {
       const order = await placeOrder('Cash On Delivery');
@@ -82,7 +82,7 @@ const Cart = () => {
 
   return (
     <div className="container-fluid pb-5 pt-2 px-3 text-start animate-fade-in-up" style={{ paddingBottom: '90px' }}>
-      
+
       {/* Page Title */}
       <div className="mb-4">
         <h4 className="font-heading fw-bold text-success m-0">Your Shopping Basket</h4>
@@ -92,23 +92,23 @@ const Cart = () => {
       <div className="row g-3">
         {/* Left Side: Cart Items */}
         <div className="col-lg-8 d-flex flex-column gap-3">
-          
+
           {/* Cart List */}
           <div className="card border-0 glass-card p-3 rounded-4 shadow-sm">
             <h6 className="font-heading fw-bold text-success mb-3">Item Details</h6>
-            
+
             <div className="d-flex flex-column gap-3">
               {cart.map((item) => (
-                <div 
-                  key={item.id} 
+                <div
+                  key={item.id}
                   className="d-flex align-items-center justify-content-between pb-3 border-bottom last-border-0"
                   style={{ borderColor: 'rgba(0,0,0,0.05)' }}
                 >
                   <div className="d-flex align-items-center gap-3 text-truncate flex-grow-1">
-                    <img 
-                      src={item.image} 
-                      alt={item.name} 
-                      className="rounded-3 object-fit-cover flex-shrink-0" 
+                    <img
+                      src={item.image}
+                      alt={item.name}
+                      className="rounded-3 object-fit-cover flex-shrink-0"
                       style={{ width: '64px', height: '64px', border: '1px solid var(--border-color)' }}
                     />
                     <div className="text-truncate">
@@ -127,7 +127,7 @@ const Cart = () => {
                   <div className="d-flex align-items-center gap-3">
                     {/* Quantity Selector */}
                     <div className="d-flex align-items-center bg-light rounded-pill p-1 border">
-                      <button 
+                      <button
                         onClick={() => updateCartQuantity(item.id, item.quantity - 1)}
                         className="btn btn-link btn-sm text-secondary p-0 px-2 border-0 d-flex align-items-center"
                       >
@@ -136,7 +136,7 @@ const Cart = () => {
                       <span className="fw-bold px-1 text-dark" style={{ minWidth: '16px', textAlign: 'center', fontSize: '13px' }}>
                         {item.quantity}
                       </span>
-                      <button 
+                      <button
                         onClick={() => updateCartQuantity(item.id, item.quantity + 1)}
                         className="btn btn-link btn-sm text-secondary p-0 px-2 border-0 d-flex align-items-center"
                         disabled={item.quantity >= item.stock}
@@ -146,8 +146,8 @@ const Cart = () => {
                     </div>
 
                     {/* Delete button */}
-                    <button 
-                      onClick={() => removeFromCart(item.id)} 
+                    <button
+                      onClick={() => removeFromCart(item.id)}
                       className="btn btn-link text-danger p-1 border-0"
                       title="Remove item"
                     >
@@ -163,8 +163,8 @@ const Cart = () => {
           <div className="card border-0 glass-card p-3 rounded-4 shadow-sm">
             <div className="d-flex justify-content-between align-items-center mb-3">
               <h6 className="font-heading fw-bold text-success m-0">Delivery Address</h6>
-              <button 
-                onClick={() => setShowAddressModal(true)} 
+              <button
+                onClick={() => setShowAddressModal(true)}
                 className="btn btn-xs btn-outline-success rounded-pill px-3 py-1 font-heading fw-bold"
                 style={{ fontSize: '11px' }}
               >
@@ -184,7 +184,7 @@ const Cart = () => {
                   <p className="m-0 text-muted font-body mt-1" style={{ fontSize: '13px', lineHeight: '1.4' }}>
                     {selectedAddress.addressLine}, {selectedAddress.city} - {selectedAddress.postalCode}
                   </p>
-                  
+
                   {/* Kilometer Distance Marker Banner */}
                   <div className="mt-2 bg-success-subtle text-success py-1 px-2 rounded-pill d-inline-flex align-items-center gap-1" style={{ background: 'var(--accent-green-bg)', fontSize: '11px' }}>
                     <MapIcon size={12} />
@@ -195,8 +195,8 @@ const Cart = () => {
             ) : (
               <div className="text-center py-3 bg-light rounded-4">
                 <p className="text-muted text-xs mb-2">No active address selected. Select address to compute delivery costs.</p>
-                <button 
-                  onClick={() => setShowAddressModal(true)} 
+                <button
+                  onClick={() => setShowAddressModal(true)}
                   className="btn btn-sm btn-success rounded-pill px-3"
                 >
                   Configure Address
@@ -208,7 +208,7 @@ const Cart = () => {
 
         {/* Right Side: Bill Details & Coupons */}
         <div className="col-lg-4 d-flex flex-column gap-3">
-          
+
           {/* Coupons Panel */}
           <div className="card border-0 glass-card p-3 rounded-4 shadow-sm">
             <h6 className="font-heading fw-bold text-success mb-3 d-flex align-items-center gap-1">
@@ -230,9 +230,9 @@ const Cart = () => {
               </div>
             ) : (
               <form onSubmit={handleCouponSubmit} className="d-flex gap-2">
-                <input 
-                  type="text" 
-                  placeholder="Enter ORGANIC20, FREE50..." 
+                <input
+                  type="text"
+                  placeholder="Enter ORGANIC20, FREE50..."
                   className="form-control form-control-organic py-1.5 px-3 text-xs flex-grow-1"
                   value={couponCode}
                   onChange={(e) => setCouponCode(e.target.value)}
@@ -255,8 +255,8 @@ const Cart = () => {
                 <span className="text-muted text-xs fw-semibold font-body d-block mb-2" style={{ fontSize: '10.5px' }}>Available Coupons:</span>
                 <div className="d-flex flex-column gap-1.5">
                   {coupons.map((c) => (
-                    <div 
-                      key={c.id} 
+                    <div
+                      key={c.id}
                       onClick={() => handleQuickApply(c.code)}
                       className="p-2 rounded-3 bg-light border border-light-subtle d-flex justify-content-between align-items-center cursor-pointer hover-expand"
                     >
@@ -275,7 +275,7 @@ const Cart = () => {
           {/* Checkout Summary Card */}
           <div className="card border-0 glass-card p-3 rounded-4 shadow-sm text-start">
             <h6 className="font-heading fw-bold text-success mb-3">Bill Details</h6>
-            
+
             <div className="d-flex flex-column gap-2 border-bottom pb-3 mb-3">
               <div className="d-flex justify-content-between text-muted text-xs">
                 <span>Basket Subtotal</span>
@@ -305,10 +305,10 @@ const Cart = () => {
             </div>
 
             {/* Checkout Trigger */}
-            <button 
-              onClick={handleCheckout} 
+            <button
+              onClick={handleCheckout}
               disabled={checkoutLoading}
-              className="btn btn-organic w-100 py-2.5 rounded-pill font-heading fw-bold shadow"
+              className="btn btn-organic w-100 py-2.5 rounded-pill font-heading fw-bold shadow mb-4"
             >
               {checkoutLoading ? 'Placing Order...' : `Proceed To Checkout (₹${cartTotal})`}
             </button>
@@ -318,9 +318,9 @@ const Cart = () => {
       </div>
 
       {/* Address Selection Modal */}
-      <AddressSelectionModal 
-        show={showAddressModal} 
-        onClose={() => setShowAddressModal(false)} 
+      <AddressSelectionModal
+        show={showAddressModal}
+        onClose={() => setShowAddressModal(false)}
       />
     </div>
   );

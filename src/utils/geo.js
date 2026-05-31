@@ -2,8 +2,8 @@
 
 // Central Farm location coordinates (Bengaluru, India)
 export const FARM_LOCATION = {
-  lat: 12.9716,
-  lng: 77.5946,
+  lat: 17.4391,
+  lng: 78.4269,
   address: 'HSP Organics Farm Hub, Cubbon Park Road, Bengaluru, Karnataka 560001'
 };
 

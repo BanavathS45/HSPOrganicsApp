@@ -34,120 +34,279 @@ const ProductCard = ({ product, onViewDetails }) => {
   };
 
   const getStockStatus = () => {
-    if (product.stock === 0) {
-      return <span className="badge bg-danger rounded-pill">Out of Stock</span>;
-    }
-    if (product.stock <= 5) {
-      return <span className="badge bg-warning text-dark rounded-pill">Only {product.stock} Left</span>;
-    }
-    return <span className="badge bg-success-subtle text-success rounded-pill">In Stock</span>;
+    if (product.stock === 0)
+      return <span style={styles.badgeOut}>Out of Stock</span>;
+    if (product.stock <= 5)
+      return <span style={styles.badgeLow}>Only {product.stock} Left</span>;
+    return <span style={styles.badgeIn}>In Stock</span>;
   };
 
   return (
-    <div 
-      className="card h-100 border-0 glass-card text-start cursor-pointer"
+    <div
       onClick={() => onViewDetails(product)}
-      style={{ borderRadius: '20px', overflow: 'hidden' }}
+      style={styles.card}
+      onMouseEnter={e => e.currentTarget.style.borderColor = '#c8c8c8'}
+      onMouseLeave={e => e.currentTarget.style.borderColor = '#ebebeb'}
     >
-      {/* Product Image & Wishlist Button */}
-      <div className="position-relative" style={{ height: '160px', overflow: 'hidden', backgroundColor: 'var(--bg-app)' }}>
-        <img 
-          src={product.image} 
-          alt={product.name} 
-          className="w-100 h-100 object-fit-cover transition-normal"
-          style={{ transition: 'transform 0.5s' }}
-          onMouseEnter={(e) => e.target.style.transform = 'scale(1.08)'}
-          onMouseLeave={(e) => e.target.style.transform = 'scale(1)'}
+      {/* Image */}
+      <div style={styles.imgWrap}>
+        <img
+          src={product.image}
+          alt={product.name}
+          style={styles.img}
+          onMouseEnter={e => e.currentTarget.style.transform = 'scale(1.06)'}
+          onMouseLeave={e => e.currentTarget.style.transform = 'scale(1)'}
         />
-        
-        {/* Category Label */}
-        <span className="position-absolute top-2 start-2 badge bg-white text-success fw-bold font-heading shadow-sm" style={{ top: '10px', left: '10px' }}>
-          {product.category}
-        </span>
-
-        {/* Wishlist Button */}
+        <span style={styles.catPill}>{product.category}</span>
         {user && (
-          <button 
+          <button
             onClick={handleWishlist}
-            className="position-absolute btn bg-white rounded-circle p-2 shadow-sm border-0 d-flex align-items-center justify-content-center"
-            style={{ 
-              top: '10px', 
-              right: '10px', 
-              width: '32px', 
-              height: '32px',
-              transition: 'all 0.2s'
-            }}
+            style={styles.wishBtn}
+            onMouseEnter={e => e.currentTarget.style.borderColor = '#E24B4A'}
+            onMouseLeave={e => e.currentTarget.style.borderColor = '#e0e0e0'}
           >
-            <Heart 
-              size={16} 
-              fill={isWishlisted ? 'var(--cui-danger, #dc3545)' : 'none'} 
-              className={isWishlisted ? 'text-danger scale-up-animation' : 'text-muted'} 
-            />
+            <Heart size={13} fill={isWishlisted ? '#E24B4A' : 'none'} color={isWishlisted ? '#E24B4A' : '#999'} />
           </button>
         )}
       </div>
 
-      {/* Card Content */}
-      <div className="card-body p-3 d-flex flex-column justify-content-between">
-        <div>
-          <div className="mb-2 d-flex justify-content-between align-items-center">
-            <span className="text-secondary font-body fw-bold" style={{ fontSize: '11px' }}>
-              Unit: {product.unit}
-            </span>
-            {getStockStatus()}
-          </div>
-          
-          <h6 className="font-heading fw-bold text-truncate-2 m-0 text-success" style={{ fontSize: '14px', height: '40px', lineHeight: '1.4' }}>
-            {product.name}
-          </h6>
+      {/* Body */}
+      <div style={styles.body}>
+        <div style={styles.metaRow}>
+          <span style={styles.unitLabel}>Unit: {product.unit}</span>
+          {getStockStatus()}
         </div>
 
-        {/* Price & Action Row */}
-        <div className="mt-3 d-flex align-items-center justify-content-between">
+        <p style={styles.pname}>{product.name}</p>
+
+        <div style={styles.divider} />
+
+        <div style={styles.priceRow}>
           <div>
-            <span className="text-muted text-xs d-block" style={{ fontSize: '10px' }}>Price</span>
-            <span className="fw-bold font-heading text-dark" style={{ fontSize: '17px' }}>
-              ₹{product.price}
-            </span>
+            <div style={styles.priceLabel}>Price</div>
+            <div style={styles.priceAmt}>₹{product.price}</div>
           </div>
 
-          {/* Cart Buttons */}
           {product.stock === 0 ? (
-            <button className="btn btn-sm btn-secondary disabled rounded-pill px-3" disabled>
-              Sold Out
-            </button>
+            <button style={styles.soldBtn} disabled>Sold Out</button>
           ) : isInCart ? (
-            <div className="d-flex align-items-center bg-success text-white rounded-pill px-2 py-1 shadow-sm">
-              <button 
+            <div style={styles.qtyCtrl}>
+              <button
                 onClick={handleDecrement}
-                className="btn btn-link btn-sm text-white p-0 me-2 border-0 d-flex align-items-center"
+                style={styles.qtyBtn}
+                onMouseEnter={e => e.currentTarget.style.background = '#EAF3DE'}
+                onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
               >
-                <Minus size={14} />
+                <Minus size={12} color="#3B6D11" />
               </button>
-              <span className="fw-bold px-1" style={{ fontSize: '13px', minWidth: '16px', textAlign: 'center' }}>
-                {cartItem.quantity}
-              </span>
-              <button 
+              <span style={styles.qtyNum}>{cartItem.quantity}</span>
+              <button
                 onClick={handleIncrement}
-                className="btn btn-link btn-sm text-white p-0 ms-2 border-0 d-flex align-items-center"
                 disabled={cartItem.quantity >= product.stock}
+                style={styles.qtyBtn}
+                onMouseEnter={e => e.currentTarget.style.background = '#EAF3DE'}
+                onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
               >
-                <Plus size={14} />
+                <Plus size={12} color="#3B6D11" />
               </button>
             </div>
           ) : (
-            <button 
+            <button
               onClick={handleAddToCart}
-              className="btn btn-organic btn-sm px-3 d-flex align-items-center gap-1 shadow-sm"
-              style={{ padding: '6px 12px' }}
+              style={styles.addBtn}
+              onMouseEnter={e => e.currentTarget.style.background = '#EAF3DE'}
+              onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
             >
-              <ShoppingCart size={13} /> Add
+              <ShoppingCart size={12} color="#3B6D11" />
+              <span>Add</span>
             </button>
           )}
         </div>
       </div>
     </div>
   );
+};
+
+const styles = {
+  card: {
+    background: '#fff',
+    border: '0.5px solid #ebebeb',
+    borderRadius: '14px',
+    overflow: 'hidden',
+    cursor: 'pointer',
+    transition: 'border-color 0.2s',
+    display: 'flex',
+    flexDirection: 'column',
+    height: '100%',
+    width: '100%',
+  },
+  imgWrap: {
+    position: 'relative',
+    width: '100%',
+    paddingTop: '65%',   // ← aspect ratio trick: height = 65% of card width
+    overflow: 'hidden',
+    background: '#f7f7f5',
+    flexShrink: 0,
+  },
+  img: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    width: '100%',
+    height: '100%',
+    objectFit: 'cover',
+    transition: 'transform 0.4s ease',
+    display: 'block',
+  },
+  catPill: {
+    position: 'absolute',
+    top: '8px',
+    left: '8px',
+    background: '#fff',
+    color: '#3B6D11',
+    fontSize: '9px',
+    fontWeight: '500',
+    padding: '2px 7px',
+    borderRadius: '99px',
+    border: '0.5px solid #e0e0e0',
+  },
+  wishBtn: {
+    position: 'absolute',
+    top: '8px',
+    right: '8px',
+    width: '26px',
+    height: '26px',
+    borderRadius: '50%',
+    background: '#fff',
+    border: '0.5px solid #e0e0e0',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    cursor: 'pointer',
+    transition: 'border-color 0.2s',
+    padding: 0,
+  },
+  body: {
+    padding: '10px 11px 12px',
+    display: 'flex',
+    flexDirection: 'column',
+    gap: '6px',
+    flex: 1,
+  },
+  metaRow: {
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  unitLabel: {
+    fontSize: '10px',
+    color: '#888',
+  },
+  badgeIn: {
+    fontSize: '9px',
+    fontWeight: '500',
+    padding: '2px 6px',
+    borderRadius: '99px',
+    background: '#EAF3DE',
+    color: '#3B6D11',
+  },
+  badgeLow: {
+    fontSize: '9px',
+    fontWeight: '500',
+    padding: '2px 6px',
+    borderRadius: '99px',
+    background: '#FAEEDA',
+    color: '#854F0B',
+  },
+  badgeOut: {
+    fontSize: '9px',
+    fontWeight: '500',
+    padding: '2px 6px',
+    borderRadius: '99px',
+    background: '#FCEBEB',
+    color: '#A32D2D',
+  },
+  pname: {
+    fontSize: '12px',
+    fontWeight: '500',
+    color: '#1a1a1a',
+    lineHeight: '1.4',
+    minHeight: '34px',
+    margin: 0,
+    display: '-webkit-box',
+    WebkitLineClamp: 2,
+    WebkitBoxOrient: 'vertical',
+    overflow: 'hidden',
+  },
+  divider: {
+    height: '0.5px',
+    background: '#ebebeb',
+  },
+  priceRow: {
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingTop: '2px',
+  },
+  priceLabel: {
+    fontSize: '9px',
+    color: '#aaa',
+    marginBottom: '1px',
+  },
+  priceAmt: {
+    fontSize: '15px',
+    fontWeight: '500',
+    color: '#1a1a1a',
+  },
+  addBtn: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '4px',
+    padding: '5px 11px',
+    borderRadius: '99px',
+    border: '0.5px solid #3B6D11',
+    background: 'transparent',
+    color: '#3B6D11',
+    fontSize: '11px',
+    fontWeight: '500',
+    cursor: 'pointer',
+    transition: 'background 0.15s',
+  },
+  qtyCtrl: {
+    display: 'flex',
+    alignItems: 'center',
+    borderRadius: '99px',
+    border: '0.5px solid #3B6D11',
+    overflow: 'hidden',
+  },
+  qtyBtn: {
+    width: '26px',
+    height: '26px',
+    background: 'transparent',
+    border: 'none',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    cursor: 'pointer',
+    transition: 'background 0.15s',
+    padding: 0,
+  },
+  qtyNum: {
+    minWidth: '20px',
+    textAlign: 'center',
+    fontSize: '11px',
+    fontWeight: '500',
+    color: '#3B6D11',
+  },
+  soldBtn: {
+    padding: '5px 11px',
+    borderRadius: '99px',
+    border: '0.5px solid #ddd',
+    background: 'transparent',
+    color: '#aaa',
+    fontSize: '11px',
+    cursor: 'not-allowed',
+  },
 };
 
 export default ProductCard;

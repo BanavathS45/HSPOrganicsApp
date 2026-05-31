@@ -41,7 +41,7 @@ const CustomerHeader = ({ onOpenAddressModal }) => {
       <div className="d-flex align-items-center justify-content-between">
         {/* Branding & Logo */}
         <Link to="/" className="d-flex align-items-center text-decoration-none">
-          <div className="bg-success text-white p-2 rounded-circle me-2 d-flex align-items-center justify-content-center" style={{ width: '36px', height: '36px' }}>
+          <div className="bg-white text-white p-2 rounded-circle me-2 d-flex align-items-center justify-content-center"  >
             <img className="fw-bold font-heading" src="/logo.png" alt="logo" style={{ width: '100%' }} />
           </div>
           <div>
@@ -49,7 +49,7 @@ const CustomerHeader = ({ onOpenAddressModal }) => {
               <h5 className="m-0 font-heading fw-bold text-success" style={{ letterSpacing: '-0.5px', fontSize: '18px' }}>
                 HSP Organics
               </h5>
-              <span 
+              <span
                 className={`badge px-1.5 py-0.5 rounded-pill font-heading ${isMock ? 'bg-warning text-dark' : 'bg-success text-white'}`}
                 style={{ fontSize: '8px', textTransform: 'uppercase', letterSpacing: '0.3px' }}
               >
