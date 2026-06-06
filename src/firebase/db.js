@@ -236,6 +236,40 @@ const initLocalStorageDB = () => {
       { id: 'cpn-2', code: 'FREE50', discountType: 'flat', discountValue: 50, minCartValue: 200, description: 'Flat ₹50 Off on orders above ₹200' }
     ]));
   }
+  if (!localStorage.getItem('hsp_videos')) {
+    localStorage.setItem('hsp_videos', JSON.stringify([
+      {
+        id: 'vid-1',
+        title: 'Organic Spinach Cultivation — Farm to Table',
+        description: 'Watch how we grow fresh organic spinach using sustainable farming practices with zero chemical pesticides.',
+        url: 'https://www.youtube.com/embed/bHhgPgGPpLI',
+        thumbnail: 'https://images.unsplash.com/photo-1576045057995-568f588f82fb?w=600&auto=format&fit=crop&q=80',
+        category: 'Cultivation',
+        createdAt: new Date().toISOString()
+      },
+      {
+        id: 'vid-2',
+        title: 'Cold-Press Virgin Coconut Oil Extraction',
+        description: 'Traditional wood-pressed Kachi Ghani process that retains all nutrients and natural aroma.',
+        url: 'https://www.youtube.com/embed/K2yjU_6Ywns',
+        thumbnail: 'https://images.unsplash.com/photo-1574269909862-7e1d70bb8078?w=600&auto=format&fit=crop&q=80',
+        category: 'Processing',
+        createdAt: new Date().toISOString()
+      },
+      {
+        id: 'vid-3',
+        title: 'Alphonso Mango Harvesting Season',
+        description: 'Experience the joy of harvesting GI-tagged Alphonso mangoes from our coastal organic orchards.',
+        url: 'https://www.youtube.com/embed/ysz5S6PUM-U',
+        thumbnail: 'https://images.unsplash.com/photo-1553279768-865429fa0078?w=600&auto=format&fit=crop&q=80',
+        category: 'Harvest',
+        createdAt: new Date().toISOString()
+      }
+    ]));
+  }
+  if (!localStorage.getItem('hsp_ratings')) {
+    localStorage.setItem('hsp_ratings', JSON.stringify([]));
+  }
 };
 
 // Execute DB initialization
@@ -341,16 +375,30 @@ export const authService = {
         const fu = result.user;
         const adminEmail = import.meta.env.VITE_ADMIN_EMAIL || 'admin@hsporganics.com';
         let role = fu.email === adminEmail ? 'admin' : 'customer';
+        let dbUid = fu.uid;
+        
         try {
           const uSnap = await getDoc(doc(db, 'users', fu.uid));
           if (uSnap.exists() && uSnap.data().role) {
             role = uSnap.data().role;
+          } else {
+            // Check if the user was manually added (e.g. Delivery Partner)
+            const q = query(collection(db, 'users'), where('email', '==', fu.email));
+            const querySnapshot = await getDocs(q);
+            if (!querySnapshot.empty) {
+               const docData = querySnapshot.docs[0].data();
+               dbUid = querySnapshot.docs[0].id; // Use the Firestore document ID to match orders
+               if (docData.role) {
+                  role = docData.role;
+               }
+            }
           }
         } catch (e) {
           console.warn("Error fetching user role:", e);
         }
+        
         const userObj = {
-          uid: fu.uid,
+          uid: dbUid,
           email: fu.email,
           displayName: fu.displayName || fu.email,
           photoURL: fu.photoURL || `https://ui-avatars.com/api/?name=${encodeURIComponent(fu.displayName || fu.email)}&background=2E7D32&color=fff`,
@@ -708,6 +756,7 @@ export const orderService = {
       userId,
       customerName: orderData.customerName || 'Customer',
       customerEmail: orderData.customerEmail || '',
+      customerPhone: orderData.customerPhone || '',
       items: orderData.items,
       subtotal: orderData.subtotal,
       deliveryCharge: orderData.deliveryCharge,
@@ -1147,6 +1196,9 @@ export const deliveryBoyService = {
           list.push({ id: doc.id, ...doc.data() });
         });
         callback(list);
+      }, (error) => {
+        console.error("Error subscribing to delivery boys:", error);
+        callback([]); // Fallback to empty list to stop loading
       });
     }
     return subscribeToLocalCollection('users', (usersList) => {
@@ -1207,5 +1259,106 @@ export const deliveryBoyService = {
     localStorage.setItem('hsp_users', JSON.stringify(filtered));
     triggerCollectionChange('users');
     return true;
+  }
+};
+
+// 9. Cultivation Videos Service
+export const videoService = {
+  subscribe: (callback) => {
+    if (!isMock && db) {
+      return onSnapshot(collection(db, 'videos'), (snapshot) => {
+        const list = [];
+        snapshot.forEach((d) => list.push({ id: d.id, ...d.data() }));
+        list.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+        callback(list);
+      });
+    }
+    return subscribeToLocalCollection('videos', callback);
+  },
+
+  add: async (videoData) => {
+    const clean = {
+      title: videoData.title,
+      description: videoData.description || '',
+      url: videoData.url,
+      thumbnail: videoData.thumbnail || '',
+      category: videoData.category || 'General',
+      createdAt: new Date().toISOString()
+    };
+    if (!isMock && db) {
+      const ref = await addDoc(collection(db, 'videos'), clean);
+      return { id: ref.id, ...clean };
+    }
+    const videos = JSON.parse(localStorage.getItem('hsp_videos') || '[]');
+    const nv = { id: 'vid-' + Math.random().toString(36).substring(2, 9), ...clean };
+    videos.unshift(nv);
+    localStorage.setItem('hsp_videos', JSON.stringify(videos));
+    triggerCollectionChange('videos');
+    return nv;
+  },
+
+  delete: async (videoId) => {
+    if (!isMock && db) {
+      await deleteDoc(doc(db, 'videos', videoId));
+      return true;
+    }
+    let videos = JSON.parse(localStorage.getItem('hsp_videos') || '[]');
+    videos = videos.filter(v => v.id !== videoId);
+    localStorage.setItem('hsp_videos', JSON.stringify(videos));
+    triggerCollectionChange('videos');
+    return true;
+  }
+};
+
+// 10. Customer Ratings Service
+export const ratingService = {
+  subscribe: (callback) => {
+    if (!isMock && db) {
+      return onSnapshot(collection(db, 'ratings'), (snapshot) => {
+        const list = [];
+        snapshot.forEach((d) => list.push({ id: d.id, ...d.data() }));
+        list.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+        callback(list);
+      });
+    }
+    return subscribeToLocalCollection('ratings', callback);
+  },
+
+  submit: async (ratingData) => {
+    const clean = {
+      orderId: ratingData.orderId,
+      userId: ratingData.userId,
+      customerName: ratingData.customerName || 'Customer',
+      deliveryBoyId: ratingData.deliveryBoyId || null,
+      deliveryBoyName: ratingData.deliveryBoyName || null,
+      stars: ratingData.stars,
+      comment: ratingData.comment || '',
+      createdAt: new Date().toISOString()
+    };
+    if (!isMock && db) {
+      const q = query(collection(db, 'ratings'),
+        where('orderId', '==', ratingData.orderId),
+        where('userId', '==', ratingData.userId));
+      const existing = await getDocs(q);
+      if (!existing.empty) {
+        await updateDoc(existing.docs[0].ref, clean);
+        return { id: existing.docs[0].id, ...clean };
+      }
+      const ref = await addDoc(collection(db, 'ratings'), clean);
+      return { id: ref.id, ...clean };
+    }
+    const ratings = JSON.parse(localStorage.getItem('hsp_ratings') || '[]');
+    const idx = ratings.findIndex(r => r.orderId === ratingData.orderId && r.userId === ratingData.userId);
+    if (idx !== -1) {
+      ratings[idx] = { ...ratings[idx], ...clean };
+      localStorage.setItem('hsp_ratings', JSON.stringify(ratings));
+      triggerCollectionChange('ratings');
+      return ratings[idx];
+    }
+    const nr = { id: 'rating-' + Math.random().toString(36).substring(2, 9), ...clean };
+    ratings.unshift(nr);
+    localStorage.setItem('hsp_ratings', JSON.stringify(ratings));
+    triggerCollectionChange('ratings');
+    return nr;
   }
 };

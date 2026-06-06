@@ -1,10 +1,12 @@
 import React, { useState } from 'react';
 import { useApp } from '../../context/AppContext';
 import { couponService } from '../../firebase/db';
+import { useToast } from '../../components/Toast';
 import { Ticket, Plus, Trash2, Tag, Percent } from 'lucide-react';
 
 const Coupons = () => {
   const { coupons } = useApp();
+  const { toast, confirm } = useToast();
 
   const [code, setCode] = useState('');
   const [discountType, setDiscountType] = useState('percentage');
@@ -16,7 +18,7 @@ const Coupons = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!code || !discountValue) {
-      alert("Please fill in coupon code and value.");
+      toast.warning('Please fill in coupon code and discount value.', 'Missing Fields');
       return;
     }
 
@@ -31,26 +33,25 @@ const Coupons = () => {
 
     try {
       await couponService.add(payload);
-      alert("New coupon created successfully!");
-      // Reset form
-      setCode('');
-      setDiscountValue('');
-      setMinCartValue('');
-      setDescription('');
+      toast.success(`Coupon created successfully!`, 'Coupon Created');
+      setCode(''); setDiscountValue(''); setMinCartValue(''); setDescription('');
     } catch (err) {
-      alert("Error adding coupon: " + err.message);
+      toast.error('Error adding coupon: ' + err.message);
     } finally {
       setLoading(false);
     }
   };
 
   const handleDelete = async (id) => {
-    if (window.confirm("Are you sure you want to deactivate this coupon code?")) {
+    const ok = await confirm('This coupon code will be permanently deactivated.', {
+      title: 'Deactivate Coupon?', confirmLabel: 'Deactivate', cancelLabel: 'Cancel', danger: true,
+    });
+    if (ok) {
       try {
         await couponService.delete(id);
-        alert("Coupon deactivated.");
+        toast.success('Coupon deactivated successfully.');
       } catch (err) {
-        alert("Error deactivating coupon: " + err.message);
+        toast.error('Error deactivating coupon: ' + err.message);
       }
     }
   };

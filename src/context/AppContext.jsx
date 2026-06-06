@@ -1,7 +1,8 @@
 import React, { createContext, useContext, useState, useEffect, useRef } from 'react';
 import { 
   authService, productService, orderService, addressService, 
-  notificationService, wishlistService, couponService 
+  notificationService, wishlistService, couponService,
+  videoService, ratingService
 } from '../firebase/db';
 import { registerFCMToken, initForegroundMessaging } from '../firebase/messaging';
 import { calculateDistance, FARM_LOCATION, calculateDeliveryCharge } from '../utils/geo';
@@ -24,6 +25,8 @@ export const AppProvider = ({ children }) => {
   const [notifications, setNotifications] = useState([]);
   const [coupons, setCoupons] = useState([]);
   const [activeCoupon, setActiveCoupon] = useState(null);
+  const [videos, setVideos] = useState([]);
+  const [ratings, setRatings] = useState([]);
   const [cart, setCart] = useState(() => {
     if (typeof window !== 'undefined') {
       const savedCart = localStorage.getItem('hsp_cart');
@@ -145,6 +148,16 @@ export const AppProvider = ({ children }) => {
       setCoupons(data);
     });
 
+    // 6. Subscribe to cultivation videos
+    const unsubVideos = videoService.subscribe((data) => {
+      setVideos(data);
+    });
+
+    // 7. Subscribe to customer ratings
+    const unsubRatings = ratingService.subscribe((data) => {
+      setRatings(data);
+    });
+
     // 6. In-App FCM + Native Browser notification listener (all three roles)
     const handleFCMAlert = (e) => {
       const noti = e.detail;
@@ -209,6 +222,8 @@ export const AppProvider = ({ children }) => {
       unsubNotifications();
       unsubWishlist();
       unsubCoupons();
+      unsubVideos();
+      unsubRatings();
       window.removeEventListener('hsp_fcm_notification', handleFCMAlert);
     };
   }, [user]);
@@ -425,6 +440,7 @@ export const AppProvider = ({ children }) => {
     const orderData = {
       customerName: user.displayName,
       customerEmail: user.email,
+      customerPhone: user.phone || user.phoneNumber || '',
       items: cart,
       subtotal: cartSubtotal,
       deliveryCharge,
@@ -459,6 +475,21 @@ export const AppProvider = ({ children }) => {
     }
   };
 
+  // Submit a rating for a delivered order
+  const submitRating = async (ratingData) => {
+    const result = await ratingService.submit(ratingData);
+    // Notify delivery boy if assigned
+    if (ratingData.deliveryBoyId) {
+      await notificationService.addSystemNotification({
+        title: `New Rating: ${ratingData.stars}⭐`,
+        body: `${ratingData.customerName} rated order ${ratingData.orderId} with ${ratingData.stars} stars. ${ratingData.comment ? '"' + ratingData.comment + '"' : ''}`,
+        type: 'rating',
+        userId: ratingData.deliveryBoyId
+      });
+    }
+    return result;
+  };
+
   return (
     <AppContext.Provider value={{
       user,
@@ -475,6 +506,8 @@ export const AppProvider = ({ children }) => {
       notifications,
       coupons,
       activeCoupon,
+      videos,
+      ratings,
       cart,
       theme,
       toggleTheme,
@@ -497,6 +530,7 @@ export const AppProvider = ({ children }) => {
       toggleWishlist,
       isProductInWishlist,
       markNotificationsRead,
+      submitRating,
       activeToast,
       setActiveToast
     }}>

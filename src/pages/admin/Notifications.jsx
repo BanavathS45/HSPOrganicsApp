@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useApp } from '../../context/AppContext';
 import { notificationService } from '../../firebase/db';
 import { sendInAppNotification } from '../../firebase/messaging';
+import { useToast } from '../../components/Toast';
 import { 
   Bell, Plus, Calendar, Trash2, Megaphone, ShieldAlert, 
   Sparkles, ShoppingBag, Send, CheckCircle2, Info, Key, AlertTriangle
@@ -11,6 +12,7 @@ const VAPID_SET = !!import.meta.env.VITE_FIREBASE_VAPID_KEY;
 
 const Notifications = () => {
   const { notifications } = useApp();
+  const { toast } = useToast();
 
   const [title, setTitle] = useState('');
   const [body, setBody] = useState('');
@@ -21,7 +23,7 @@ const Notifications = () => {
   const handleBroadcast = async (e) => {
     e.preventDefault();
     if (!title || !body) {
-      alert("Please enter a title and message.");
+      toast.warning('Please enter a notification title and message.', 'Missing Fields');
       return;
     }
 
@@ -59,7 +61,7 @@ const Notifications = () => {
       setBody('');
       setTimeout(() => setSent(false), 4000);
     } catch (err) {
-      alert("Error broadcasting notification: " + err.message);
+      toast.error('Error broadcasting notification: ' + err.message);
     } finally {
       setLoading(false);
     }

@@ -30,49 +30,67 @@ import AdminOrders from './pages/admin/Orders';
 import Coupons from './pages/admin/Coupons';
 import Notifications from './pages/admin/Notifications';
 import DeliveryBoys from './pages/admin/DeliveryBoys';
+import AdminVideos from './pages/admin/Videos';
+import AdminRatings from './pages/admin/Ratings';
 
 // Delivery Agent Pages
 import DeliveryDashboard from './pages/delivery/Dashboard';
 
 // Global Components
 import GlassmorphicToast from './components/GlassmorphicToast';
-import { Sparkles } from 'lucide-react';
+import { ToastProvider } from './components/Toast';
 
 function App() {
-  const [showSplash, setShowSplash] = useState(true);
+  const [splashPhase, setSplashPhase] = useState('visible'); // 'visible' | 'fading' | 'gone'
 
-  // Splash Screen timer (simulating native PWA loading experience)
   useEffect(() => {
-    const timer = setTimeout(() => {
-      setShowSplash(false);
-    }, 2500); // 2.5 seconds splash display
-    return () => clearTimeout(timer);
+    // Start fade-out after 2.8s
+    const fadeTimer = setTimeout(() => setSplashPhase('fading'), 2800);
+    // Fully remove splash after fade transition completes
+    const goneTimer = setTimeout(() => setSplashPhase('gone'), 3400);
+    return () => { clearTimeout(fadeTimer); clearTimeout(goneTimer); };
   }, []);
 
   return (
     <AppProvider>
+      <ToastProvider>
       {/* PWA Splash Screen Overlay */}
-      {showSplash && (
-        <div className="splash-overlay">
-          <div className="text-center animate-fade-in-up">
-            <div
-              className="bg-white text-success p-3.5 rounded-circle d-inline-flex align-items-center justify-content-center mb-3 shadow-lg"
-              style={{ width: '80px', height: '80px' }}
-            >
-              <img src="logo.png" className="m-0 font-heading fw-extrabold" style={{ fontSize: '32px' }} width={"100%"} />
+      {splashPhase !== 'gone' && (
+        <div className={`splash-overlay ${splashPhase === 'fading' ? 'splash-fading' : ''}`}>
+          {/* Ambient glow ring */}
+          <div className="splash-glow-ring" />
+
+          <div className="text-center" style={{ position: 'relative', zIndex: 2 }}>
+            {/* Pulsing logo circle */}
+            <div className="splash-logo-wrap">
+              <div className="splash-logo-ring" />
+              <div className="splash-logo-inner">
+                <img src="/logo.png" alt="HSP Organics" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
+              </div>
             </div>
-            <h1 className="font-heading fw-extrabold text-white m-0" style={{ fontSize: '28px', letterSpacing: '-0.5px' }}>
+
+            {/* Brand name */}
+            <h1 className="font-heading fw-extrabold text-white mt-4 mb-1" style={{ fontSize: '30px', letterSpacing: '-0.5px' }}>
               HSP Organics
             </h1>
-            <p className="font-body text-white-50 text-xs mt-1" style={{ letterSpacing: '2px', textTransform: 'uppercase' }}>
-              “From Farm To Home”
+            <p className="font-body text-white-50 m-0" style={{ fontSize: '11px', letterSpacing: '3px', textTransform: 'uppercase' }}>
+              From Farm To Home
             </p>
 
-            <div className="mt-4 d-flex align-items-center justify-content-center gap-1 text-xs text-white-50">
-              <Sparkles size={14} className="pulse-animation" />
-              <span>Certified Organic Produce</span>
+            {/* Shimmer progress bar */}
+            <div className="splash-progress-track mt-5">
+              <div className="splash-progress-bar" />
             </div>
+            <p className="text-white-50 mt-2" style={{ fontSize: '10px', letterSpacing: '1.5px' }}>
+              Loading fresh produce...
+            </p>
           </div>
+
+          {/* Floating organic dots */}
+          <div className="splash-dot splash-dot-1" />
+          <div className="splash-dot splash-dot-2" />
+          <div className="splash-dot splash-dot-3" />
+          <div className="splash-dot splash-dot-4" />
         </div>
       )}
 
@@ -106,6 +124,8 @@ function App() {
             <Route path="delivery" element={<DeliveryBoys />} />
             <Route path="coupons" element={<Coupons />} />
             <Route path="notifications" element={<Notifications />} />
+            <Route path="videos" element={<AdminVideos />} />
+            <Route path="ratings" element={<AdminRatings />} />
           </Route>
 
           {/* Dedicated Delivery Agent Portal */}
@@ -115,6 +135,7 @@ function App() {
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </Router>
+      </ToastProvider>
     </AppProvider>
   );
 }

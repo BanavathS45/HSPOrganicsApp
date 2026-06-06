@@ -2,6 +2,7 @@ import React, { useEffect } from 'react';
 import { useApp } from '../context/AppContext';
 import { useNavigate, NavLink, Outlet } from 'react-router-dom';
 import { isMock } from '../firebase/config';
+import { useToast } from '../components/Toast';
 import {
   LayoutDashboard, ShoppingCart, Users, Ticket,
   Bell, Settings, LogOut, ShieldAlert, ArrowLeft, Truck
@@ -9,6 +10,7 @@ import {
 
 const AdminLayout = () => {
   const { user, logout, theme, toggleTheme } = useApp();
+  const { confirm } = useToast();
   const navigate = useNavigate();
 
   // Route guarding: only allow users with 'admin' role
@@ -16,7 +18,6 @@ const AdminLayout = () => {
     if (!user) {
       navigate('/admin/login');
     } else if (user.role !== 'admin') {
-      alert("Unauthorized! Restricting access to administrators.");
       navigate('/');
     }
   }, [user, navigate]);
@@ -24,8 +25,13 @@ const AdminLayout = () => {
   if (!user || user.role !== 'admin') return null;
 
   const handleLogout = async () => {
-    await logout();
-    navigate('/admin/login');
+    const ok = await confirm('You will be signed out of the Admin Dashboard.', {
+      title: 'Log Out?',
+      confirmLabel: 'Log Out',
+      cancelLabel: 'Stay',
+      danger: true,
+    });
+    if (ok) { await logout(); navigate('/admin/login'); }
   };
 
   const navLinks = [
@@ -35,6 +41,8 @@ const AdminLayout = () => {
     { to: '/admin/delivery', label: 'Delivery Boys', icon: <Truck size={18} /> },
     { to: '/admin/coupons', label: 'Coupons', icon: <Ticket size={18} /> },
     { to: '/admin/notifications', label: 'Notifications', icon: <Bell size={18} /> },
+    { to: '/admin/videos', label: 'Videos', icon: <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m22 8-6 4 6 4V8Z"/><rect width="14" height="12" x="2" y="6" rx="2" ry="2"/></svg> },
+    { to: '/admin/ratings', label: 'Ratings', icon: <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg> },
   ];
 
   return (

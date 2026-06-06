@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useApp } from '../../context/AppContext';
 import { orderService, notificationService, deliveryBoyService } from '../../firebase/db';
+import { useToast } from '../../components/Toast';
 import {
   Check, X, Truck, Package, MessageCircle, MapPin,
   MapIcon, Bell, ArrowRight, ClipboardCheck
@@ -9,6 +10,7 @@ import DeliveryMap from '../../components/DeliveryMap';
 
 const Orders = () => {
   const { orders } = useApp();
+  const { toast } = useToast();
   const [selectedOrder, setSelectedOrder] = useState(null);
   const [deliveryBoys, setDeliveryBoys] = useState([]);
 
@@ -36,9 +38,9 @@ const Orders = () => {
       if (selectedOrder?.id === orderId) {
         setSelectedOrder(updated);
       }
-      alert(`Order ${orderId} updated to: ${newStatus}`);
+      toast.success(`Order status updated to: ${newStatus}`, 'Status Updated');
     } catch (err) {
-      alert("Error updating status: " + err.message);
+      toast.error('Error updating status: ' + err.message);
     }
   };
 
@@ -54,10 +56,10 @@ const Orders = () => {
         type: 'order_status',
         userId: selectedOrder.userId
       });
-      alert(`Manual push notification sent to ${selectedOrder.customerName}`);
+      toast.success(`Manual push notification sent to ${selectedOrder.customerName}`, 'Notification Sent');
       setCustomNotification('');
     } catch (err) {
-      alert("Error sending alert: " + err.message);
+      toast.error('Error sending alert: ' + err.message);
     } finally {
       setNotiLoading(false);
     }
@@ -120,6 +122,23 @@ const Orders = () => {
                           <span className="text-muted font-body text-xs d-block" style={{ fontSize: '10.5px' }}>
                             Distance: {ord.distanceKm.toFixed(1)} KM
                           </span>
+                          {/* Delivered By chip — visible only for delivered orders */}
+                          {ord.status === 'Delivered' && ord.deliveryBoy && (
+                            <div className="d-flex align-items-center gap-1.5 mt-1.5">
+                              <img
+                                src={ord.deliveryBoy.photo || `https://ui-avatars.com/api/?name=${encodeURIComponent(ord.deliveryBoy.name)}&size=32`}
+                                alt={ord.deliveryBoy.name}
+                                className="rounded-circle object-fit-cover border border-success"
+                                style={{ width: '18px', height: '18px' }}
+                              />
+                              <span
+                                className="badge bg-success bg-opacity-10 text-success border border-success border-opacity-25 font-body fw-semibold"
+                                style={{ fontSize: '9.5px', padding: '2px 7px', borderRadius: '100px' }}
+                              >
+                                🚴 {ord.deliveryBoy.name}
+                              </span>
+                            </div>
+                          )}
                         </div>
                         <div className="text-end">
                           <span className={`badge rounded-pill px-2.5 py-1 ${getStatusColor(ord.status)}`} style={{ fontSize: '10px' }}>
@@ -247,14 +266,35 @@ const Orders = () => {
                   )}
 
                   {(selectedOrder.status === 'Delivered' || selectedOrder.status === 'Cancelled') && (
-                    <div className="text-center py-2 bg-light rounded-3 text-xs text-muted font-body">
-                      Lifecycle finished. Order status is: <strong>{selectedOrder.status}</strong>
+                    <div className="d-flex flex-column gap-2">
+                      <div className="text-center py-2 bg-light rounded-3 text-xs text-muted font-body w-100">
+                        Lifecycle finished. Order status is: <strong>{selectedOrder.status}</strong>
+                      </div>
+                      {selectedOrder.status === 'Delivered' && selectedOrder.deliveryBoy && (
+                        <div className="border rounded-4 p-2.5 bg-success bg-opacity-5 d-flex align-items-center gap-2.5 mt-1 border-success-subtle">
+                          <img 
+                            src={selectedOrder.deliveryBoy.photo || 'https://via.placeholder.com/150'} 
+                            alt={selectedOrder.deliveryBoy.name} 
+                            className="rounded-circle object-fit-cover border border-success" 
+                            style={{ width: '36px', height: '36px' }}
+                          />
+                          <div className="flex-grow-1 text-start">
+                            <span className="text-muted font-body fw-bold text-xxs d-block" style={{ fontSize: '9px', letterSpacing: '0.5px' }}>DELIVERED BY:</span>
+                            <h6 className="m-0 font-heading fw-bold text-success" style={{ fontSize: '12.5px' }}>
+                              {selectedOrder.deliveryBoy.name}
+                            </h6>
+                            <span className="text-muted font-body text-xs" style={{ fontSize: '11px' }}>
+                              {selectedOrder.deliveryBoy.phone}
+                            </span>
+                          </div>
+                        </div>
+                      )}
                     </div>
                   )}
                 </div>
 
                 {/* Delivery Boy Assignment Panel */}
-                {selectedOrder.status !== 'Pending' && selectedOrder.status !== 'Cancelled' && (
+                {selectedOrder.status !== 'Pending' && selectedOrder.status !== 'Cancelled' && selectedOrder.status !== 'Delivered' && (
                   <div className="border-top pt-3 mt-3">
                     <h6 className="font-heading fw-bold text-secondary text-xs mb-2.5">Delivery Boy Assignment:</h6>
                     
@@ -304,10 +344,9 @@ const Orders = () => {
                                   type: 'order_status',
                                   userId: dboy.uid || dboy.id
                                 });
-
-                                alert(`Assigned ${dboy.name} to Order ${selectedOrder.id}`);
+                                toast.success(`Assigned ${dboy.name} to Order ${selectedOrder.id}`, 'Partner Assigned');
                               } catch (err) {
-                                alert("Failed to re-assign delivery boy: " + err.message);
+                                toast.error("Failed to re-assign delivery boy: " + err.message);
                               }
                             }
                           }}
@@ -350,9 +389,9 @@ const Orders = () => {
                                     userId: b.uid || b.id
                                   });
 
-                                  alert(`Successfully assigned ${b.name} to deliver this order!`);
+                                  toast.success(`Successfully assigned ${b.name} to deliver this order!`, 'Partner Assigned');
                                 } catch (err) {
-                                  alert("Failed to assign delivery boy: " + err.message);
+                                  toast.error("Failed to assign delivery boy: " + err.message);
                                 }
                               }}
                               className="btn btn-xs btn-outline-success rounded-pill px-2.5 py-1 font-body text-xs d-flex align-items-center gap-1"

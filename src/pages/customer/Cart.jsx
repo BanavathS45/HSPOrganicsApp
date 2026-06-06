@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useApp } from '../../context/AppContext';
 import { useNavigate, Link } from 'react-router-dom';
+import { useToast } from '../../components/Toast';
 import {
   Trash2, MapPin, Tag, ChevronRight, ShoppingBag,
   MapIcon, ShieldCheck, Ticket, Plus, Minus
@@ -15,6 +16,7 @@ const Cart = () => {
   } = useApp();
 
   const navigate = useNavigate();
+  const { toast } = useToast();
   const [couponCode, setCouponCode] = useState('');
   const [couponMessage, setCouponMessage] = useState(null);
   const [showAddressModal, setShowAddressModal] = useState(false);
@@ -39,12 +41,12 @@ const Cart = () => {
 
   const handleCheckout = async () => {
     if (!user) {
-      alert("Please login to place your order.");
+      toast.warning('Please log in to place your order.', 'Login Required');
       navigate('/login');
       return;
     }
     if (!selectedAddress) {
-      alert("Please select a delivery address.");
+      toast.warning('Please select a delivery address first.', 'No Address');
       setShowAddressModal(true);
       return;
     }
@@ -52,10 +54,10 @@ const Cart = () => {
     setCheckoutLoading(true);
     try {
       const order = await placeOrder('Cash On Delivery');
-      alert(`Order ${order.id} placed successfully!`);
+      toast.success(`Order placed! Your ID is ${order.id}`, 'Order Placed 🎉');
       navigate('/orders');
     } catch (err) {
-      alert(err.message || "Failed to place order.");
+      toast.error(err.message || 'Failed to place order.');
     } finally {
       setCheckoutLoading(false);
     }

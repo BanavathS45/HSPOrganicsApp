@@ -1,15 +1,26 @@
 import React, { useState, useMemo } from 'react';
 import { useApp } from '../../context/AppContext';
+import { useToast } from '../../components/Toast';
 import ProductCard from '../../components/ProductCard';
 import ProductDetailsModal from '../../components/ProductDetailsModal';
 import {
   Search, SlidersHorizontal, Sparkles, Flame, Percent,
-  MessageCircle, Mic, HelpCircle, CheckCircle2, ChevronRight
+  MessageCircle, Mic, HelpCircle, CheckCircle2, ChevronRight, PlayCircle
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
+const getYouTubeEmbedUrl = (url) => {
+  if (!url) return '';
+  const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|\&v=|shorts\/)([^#\&\?]*).*/;
+  const match = url.match(regExp);
+  return (match && match[2].length === 11)
+    ? `https://www.youtube.com/embed/${match[2]}`
+    : url;
+};
+
 const Home = () => {
-  const { products, applyCoupon } = useApp();
+  const { products, applyCoupon, videos } = useApp();
+  const { toast } = useToast();
   const navigate = useNavigate();
 
   // Search & Filter States
@@ -61,7 +72,7 @@ const Home = () => {
       const randomWord = voiceOptions[Math.floor(Math.random() * voiceOptions.length)];
       setSearchQuery(randomWord);
       setVoiceActive(false);
-      alert(`Voice recognized: "${randomWord}"`);
+      toast.info(`Voice recognized: "${randomWord}"`, 'Voice Search');
     }, 2000);
   };
 
@@ -127,7 +138,7 @@ const Home = () => {
               <button
                 onClick={() => {
                   applyCoupon(banners[activeSlide].code);
-                  alert(`Coupon ${banners[activeSlide].code} activated! Go to checkout to save.`);
+                  toast.success(`Coupon ${banners[activeSlide].code} activated! Go to checkout to save.`, 'Coupon Applied');
                 }}
                 className="btn btn-xs btn-light text-success py-0 px-2 rounded-pill font-heading fw-bold"
                 style={{ fontSize: '11px' }}
@@ -364,6 +375,37 @@ const Home = () => {
               </button>
             </div>
           </div>
+
+          {/* 5.5 Cultivation Videos Section */}
+          {videos && videos.length > 0 && (
+            <div className="mb-4">
+              <div className="d-flex justify-content-between align-items-center mb-3">
+                <h5 className="font-heading fw-bold text-success m-0 d-flex align-items-center gap-1">
+                  <PlayCircle className="text-success" size={20} /> Farm to Table Journey
+                </h5>
+              </div>
+              <div className="d-flex gap-3 overflow-x-auto pb-2" style={{ scrollbarWidth: 'none' }}>
+                {videos.map(vid => (
+                  <div key={vid.id} className="card border-0 shadow-sm rounded-4 overflow-hidden flex-shrink-0" style={{ width: '280px' }}>
+                    <div className="position-relative bg-dark" style={{ height: '160px' }}>
+                      <iframe
+                        src={getYouTubeEmbedUrl(vid.url)}
+                        title={vid.title}
+                        className="w-100 h-100 border-0"
+                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                        allowFullScreen
+                      ></iframe>
+                    </div>
+                    <div className="p-3 text-start">
+                      <span className="badge bg-success-subtle text-success mb-2" style={{ fontSize: '10px' }}>{vid.category}</span>
+                      <h6 className="font-heading fw-bold text-dark m-0 mb-1 text-truncate" style={{ fontSize: '13px' }}>{vid.title}</h6>
+                      <p className="text-muted font-body m-0 text-truncate" style={{ fontSize: '11px' }}>{vid.description}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
 
           {/* 6. Premium Brand Promises */}
           <div className="row g-2 mb-4">

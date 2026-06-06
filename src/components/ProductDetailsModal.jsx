@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useApp } from '../context/AppContext';
+import { useToast } from './Toast';
 import { X, ShoppingCart, Info, Sparkles, Heart, Plus, Minus } from 'lucide-react';
 import ProductCard from './ProductCard';
 
@@ -8,6 +9,7 @@ const ProductDetailsModal = ({ product, onClose, onNavigateToCart }) => {
     cart, addToCart, updateCartQuantity, toggleWishlist, 
     isProductInWishlist, products, user 
   } = useApp();
+  const { toast } = useToast();
 
   const [quantity, setQuantity] = useState(1);
 
@@ -25,7 +27,7 @@ const ProductDetailsModal = ({ product, onClose, onNavigateToCart }) => {
 
   const handleAddToCart = () => {
     addToCart(product, quantity);
-    alert(`${quantity} unit(s) of ${product.name} added to cart!`);
+    toast.success(`${quantity} unit(s) of ${product.name} added to cart!`, 'Added to Cart');
   };
 
   const handleBuyNow = () => {
@@ -36,7 +38,7 @@ const ProductDetailsModal = ({ product, onClose, onNavigateToCart }) => {
   const handleWishlist = (e) => {
     e.stopPropagation();
     if (!user) {
-      alert("Please log in to save favorites.");
+      toast.warning('Please log in to save favorites.', 'Authentication Required');
       return;
     }
     toggleWishlist(product.id);

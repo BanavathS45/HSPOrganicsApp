@@ -1,9 +1,11 @@
 import React from 'react';
 import { useApp } from '../context/AppContext';
+import { useToast } from './Toast';
 import { Heart, Plus, Minus, ShoppingCart } from 'lucide-react';
 
 const ProductCard = ({ product, onViewDetails }) => {
   const { cart, addToCart, updateCartQuantity, toggleWishlist, isProductInWishlist, user } = useApp();
+  const { toast } = useToast();
 
   const cartItem = cart.find(item => item.id === product.id);
   const isInCart = !!cartItem;
@@ -12,7 +14,7 @@ const ProductCard = ({ product, onViewDetails }) => {
   const handleWishlist = (e) => {
     e.stopPropagation();
     if (!user) {
-      alert("Please log in to save favorites.");
+      toast.warning('Please log in to save favorites.', 'Authentication Required');
       return;
     }
     toggleWishlist(product.id);

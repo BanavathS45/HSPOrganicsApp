@@ -2,10 +2,12 @@ import React, { useState } from 'react';
 import ReactDOM from 'react-dom';
 import { useApp } from '../../context/AppContext';
 import { productService } from '../../firebase/db';
+import { useToast } from '../../components/Toast';
 import { Plus, Edit2, Trash2, Package, AlertTriangle, CheckCircle2, Image, Upload, Link } from 'lucide-react';
 
 const Products = () => {
   const { products } = useApp();
+  const { toast, confirm } = useToast();
 
   const [showModal, setShowModal] = useState(false);
   const [editingProduct, setEditingProduct] = useState(null);
@@ -30,7 +32,7 @@ const Products = () => {
     if (!file) return;
 
     if (file.size > 2 * 1024 * 1024) {
-      alert("Local image size should not exceed 2MB to ensure fast database loading.");
+      toast.warning('Image size should not exceed 2MB for fast loading.', 'File Too Large');
       e.target.value = '';
       return;
     }
@@ -42,7 +44,7 @@ const Products = () => {
       setUploadingImage(false);
     };
     reader.onerror = () => {
-      alert("Failed to read local file.");
+      toast.error('Failed to read local file.');
       setUploadingImage(false);
     };
     reader.readAsDataURL(file);
@@ -83,7 +85,7 @@ const Products = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!name || !price || !unit || !stock || !image) {
-      alert("Please fill in all mandatory fields.");
+      toast.warning('Please fill in all mandatory fields.', 'Missing Fields');
       return;
     }
 
@@ -101,29 +103,30 @@ const Products = () => {
     setSavingProduct(true);
     try {
       if (editingProduct) {
-        // Edit
         await productService.update(editingProduct.id, payload);
-        alert("Product updated successfully!");
+        toast.success('Product updated successfully!', 'Product Updated');
       } else {
-        // Add
         await productService.add(payload);
-        alert("New product added to catalog!");
+        toast.success('New product added to catalog!', 'Product Added');
       }
       setShowModal(false);
     } catch (err) {
-      alert("Error saving product: " + err.message);
+      toast.error('Error saving product: ' + err.message);
     } finally {
       setSavingProduct(false);
     }
   };
 
   const handleDelete = async (id) => {
-    if (window.confirm("Are you sure you want to remove this product from the organic catalog?")) {
+    const ok = await confirm('This product will be permanently removed from the catalog.', {
+      title: 'Delete Product?', confirmLabel: 'Delete', cancelLabel: 'Cancel', danger: true,
+    });
+    if (ok) {
       try {
         await productService.delete(id);
-        alert("Product deleted.");
+        toast.success('Product deleted from catalog.');
       } catch (err) {
-        alert("Error deleting product: " + err.message);
+        toast.error('Error deleting product: ' + err.message);
       }
     }
   };
