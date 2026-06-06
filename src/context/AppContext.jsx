@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState, useEffect, useRef } from 'react';
-import { 
-  authService, productService, orderService, addressService, 
+import {
+  authService, productService, orderService, addressService,
   notificationService, wishlistService, couponService,
   videoService, ratingService
 } from '../firebase/db';
@@ -35,7 +35,7 @@ export const AppProvider = ({ children }) => {
     return [];
   });
   const [theme, setTheme] = useState('light');
-  
+
   // Active in-app notification state for real-time alerts
   const [activeToast, setActiveToast] = useState(null);
 
@@ -174,6 +174,13 @@ export const AppProvider = ({ children }) => {
 
       // Show in-app toast
       setActiveToast(noti);
+
+      // Play custom notification tone
+      try {
+        const tone = new Audio('/notification.mp3');
+        tone.volume = 1;
+        tone.play().catch(() => { }); // Silently ignore autoplay restrictions
+      } catch (_) { }
 
       // Native HTML5 Notification (works when app is open but tab not focused)
       if (typeof window !== 'undefined' && 'Notification' in window && Notification.permission === 'granted') {
@@ -319,7 +326,7 @@ export const AppProvider = ({ children }) => {
       navigator.geolocation.getCurrentPosition(
         (position) => {
           const { latitude, longitude } = position.coords;
-          
+
           // Simulated geocoding address details
           const simulatedAddr = {
             name: 'Detected Location',
@@ -330,7 +337,7 @@ export const AppProvider = ({ children }) => {
             lng: longitude,
             isDefault: false
           };
-          
+
           setCurrentLocation(simulatedAddr);
           resolve(simulatedAddr);
         },
@@ -360,8 +367,8 @@ export const AppProvider = ({ children }) => {
     setCart(prevCart => {
       const existing = prevCart.find(item => item.id === product.id);
       if (existing) {
-        return prevCart.map(item => 
-          item.id === product.id 
+        return prevCart.map(item =>
+          item.id === product.id
             ? { ...item, quantity: Math.min(product.stock, item.quantity + quantity) }
             : item
         );
@@ -375,7 +382,7 @@ export const AppProvider = ({ children }) => {
   };
 
   const updateCartQuantity = (productId, qty) => {
-    setCart(prevCart => 
+    setCart(prevCart =>
       prevCart.map(item => {
         if (item.id === productId) {
           const validQty = Math.max(1, Math.min(item.stock, qty));
@@ -393,9 +400,9 @@ export const AppProvider = ({ children }) => {
 
   // Calculations
   const cartSubtotal = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
-  
-  const deliveryCharge = cart.length > 0 
-    ? calculateDeliveryCharge(deliveryDistance, cartSubtotal) 
+
+  const deliveryCharge = cart.length > 0
+    ? calculateDeliveryCharge(deliveryDistance, cartSubtotal)
     : 0;
 
   // Coupon Discount
@@ -433,7 +440,7 @@ export const AppProvider = ({ children }) => {
   const placeOrder = async (paymentMethod = 'Cash On Delivery') => {
     if (!user) throw new Error("Must be logged in to place an order");
     if (cart.length === 0) throw new Error("Cart is empty");
-    
+
     const activeAddress = selectedAddress || currentLocation;
     if (!activeAddress) throw new Error("Please select or detect a delivery address");
 
