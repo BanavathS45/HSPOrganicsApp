@@ -2,459 +2,643 @@ import React, { useState, useEffect } from 'react';
 import { deliveryBoyService } from '../../firebase/db';
 import { useApp } from '../../context/AppContext';
 import { useToast } from '../../components/Toast';
-import {
-  Plus, Edit2, Trash2, Phone, Mail,
-  User, Link as LinkIcon, Camera, Search, UserCheck, X, Bike, ClipboardList, Package
-} from 'lucide-react';
+import { Plus, Edit2, Trash2, Phone, Mail, User, Link as LinkIcon, Camera, Search, UserCheck, X, ClipboardList, Package } from 'lucide-react';
 
 const styles = `
 
-  .db-root {
-   
-    --green: #1a6b3c;
-    --green-mid: #22873f;
-    --green-light: #e6f4ec;
-    --green-muted: #c3e4ce;
-    --surface: #ffffff;
-    --surface-2: #f7f9f8;
-    --surface-3: #f0f5f2;
-    --border: #dde8e2;
-    --border-strong: #b5cfbe;
-    --text: #0f2318;
-    --text-2: #3b5247;
-    --text-3: #6b897a;
-    --red: #c0392b;
-    --red-light: #fcecea;
-    --shadow: 0 1px 3px rgba(10,40,20,0.08), 0 4px 12px rgba(10,40,20,0.05);
-    --shadow-md: 0 2px 8px rgba(10,40,20,0.10), 0 8px 24px rgba(10,40,20,0.07);
+  .db2 {
+    --g: #166534;
+    --gm: #16a34a;
+    --gl: #dcfce7;
+    --gmid: #bbf7d0;
+    --bg: #ffffff;
+    --bg2: #f8faf9;
+    --bg3: #f0f7f3;
+    --bd: #e2ece7;
+    --bds: #c8ddd1;
+    --t1: #0d1f15;
+    --t2: #2d4a39;
+    --t3: #6b8a78;
+    --red: #dc2626;
+    --redl: #fef2f2;
+  
+    color: var(--t1);
     padding: 0;
-    color: var(--text);
   }
 
-  .db-header {
+  .db2-header {
     display: flex;
     justify-content: space-between;
-    align-items: flex-start;
-    margin-bottom: 28px;
+    align-items: center;
+    margin-bottom: 24px;
     gap: 16px;
   }
 
-  .db-title {
-    font-family: 'Syne', sans-serif;
-    font-size: 26px;
+  .db2-title {
+   
+    font-size: 22px;
     font-weight: 800;
-    color: var(--green);
-    margin: 0 0 4px;
-    letter-spacing: -0.5px;
+    color: var(--g);
+    margin: 0;
+    letter-spacing: -0.4px;
     line-height: 1.1;
   }
 
-  .db-subtitle {
-    font-size: 13px;
-    color: var(--text-3);
-    margin: 0;
-    font-weight: 400;
+  .db2-sub {
+    font-size: 12.5px;
+    color: var(--t3);
+    margin: 3px 0 0;
   }
 
-  .db-add-btn {
-    display: flex;
+  .db2-add-btn {
+    display: inline-flex;
     align-items: center;
-    gap: 7px;
-    padding: 10px 20px;
-    background: var(--green);
-    color: white;
+    gap: 6px;
+    padding: 9px 18px;
+    background: var(--g);
+    color: #fff;
     border: none;
-    border-radius: 100px;
-    font-family: 'Syne', sans-serif;
-    font-weight: 700;
+    border-radius: 999px;
+    
     font-size: 13px;
+    font-weight: 700;
     cursor: pointer;
     white-space: nowrap;
-    letter-spacing: 0.2px;
+    box-shadow: 0 2px 12px rgba(22,101,52,0.22);
     transition: background 0.15s, transform 0.1s;
-    box-shadow: 0 2px 10px rgba(26,107,60,0.25);
+    letter-spacing: 0.1px;
+  }
+  .db2-add-btn:hover { background: #14532d; transform: translateY(-1px); }
+  .db2-add-btn:active { transform: scale(0.97); }
+
+  .db2-stats {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 12px;
+    margin-bottom: 20px;
   }
 
-  .db-add-btn:hover { background: #145430; transform: translateY(-1px); }
-  .db-add-btn:active { transform: scale(0.97); }
-
-  .db-search-wrap {
-    background: var(--surface);
-    border: 1px solid var(--border);
+  .db2-stat {
+    background: var(--bg2);
+    border: 0.5px solid var(--bd);
     border-radius: 14px;
-    padding: 4px 16px 4px 12px;
+    padding: 14px 16px;
+  }
+
+  .db2-stat-label {
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--t3);
+    text-transform: uppercase;
+    letter-spacing: 0.6px;
+    margin-bottom: 6px;
+  }
+
+  .db2-stat-val {
+    
+    font-size: 22px;
+    font-weight: 800;
+    color: var(--t1);
+    line-height: 1;
+  }
+
+  .db2-stat-chip {
+    display: inline-block;
+    font-size: 10px;
+    font-weight: 600;
+    color: var(--g);
+    background: var(--gl);
+    padding: 2px 8px;
+    border-radius: 999px;
+    margin-top: 6px;
+  }
+
+  .db2-search-wrap {
     display: flex;
     align-items: center;
     gap: 10px;
-    margin-bottom: 24px;
-    transition: border-color 0.15s, box-shadow 0.15s;
+    border: 0.5px solid var(--bds);
+    border-radius: 12px;
+    background: var(--bg);
+    padding: 0 14px;
+    margin-bottom: 20px;
+    transition: box-shadow 0.15s, border-color 0.15s;
+  }
+  .db2-search-wrap:focus-within {
+    box-shadow: 0 0 0 3px rgba(22,163,74,0.12);
+    border-color: var(--gm);
   }
 
-  .db-search-wrap:focus-within {
-    border-color: var(--green-mid);
-    box-shadow: 0 0 0 3px rgba(34,135,63,0.10);
-  }
+  .db2-search-icon { color: var(--t3); flex-shrink: 0; }
 
-  .db-search-icon { color: var(--text-3); flex-shrink: 0; }
-
-  .db-search-input {
+  .db2-search-input {
+    flex: 1;
     border: none;
     outline: none;
     background: transparent;
-    font-family: 'DM Sans', sans-serif;
-    font-size: 14px;
-    color: var(--text);
-    padding: 10px 0;
-    width: 100%;
+   
+    font-size: 13.5px;
+    color: var(--t1);
+    padding: 11px 0;
   }
+  .db2-search-input::placeholder { color: var(--t3); }
 
-  .db-search-input::placeholder { color: var(--text-3); }
-
-  .db-grid {
+  .db2-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-    gap: 18px;
+    grid-template-columns: repeat(auto-fill, minmax(210px, 1fr));
+    gap: 14px;
   }
 
-  .db-card {
-    background: var(--surface);
-    border: 1px solid var(--border);
+  .db2-card {
+    background: var(--bg);
+    border: 0.5px solid var(--bd);
     border-radius: 18px;
-    padding: 20px;
-    display: flex;
-    flex-direction: column;
-    gap: 0;
-    transition: box-shadow 0.2s, border-color 0.2s, transform 0.15s;
-    position: relative;
     overflow: hidden;
+    transition: box-shadow 0.18s, border-color 0.18s, transform 0.15s;
+    position: relative;
   }
-
-  .db-card::before {
-    content: '';
-    position: absolute;
-    top: 0; left: 0; right: 0;
-    height: 3px;
-    background: linear-gradient(90deg, var(--green-mid), var(--green-muted));
-    opacity: 0;
-    transition: opacity 0.2s;
-  }
-
-  .db-card:hover {
-    box-shadow: var(--shadow-md);
-    border-color: var(--green-muted);
+  .db2-card:hover {
+    box-shadow: 0 6px 24px rgba(22,101,52,0.10);
+    border-color: var(--bds);
     transform: translateY(-2px);
   }
 
-  .db-card:hover::before { opacity: 1; }
-
-  .db-card-top {
+  .db2-card-top {
+    background: var(--bg3);
+    padding: 20px 18px 14px;
     display: flex;
+    flex-direction: column;
     align-items: center;
-    gap: 14px;
-    margin-bottom: 16px;
+    text-align: center;
+    border-bottom: 0.5px solid var(--bd);
+    position: relative;
   }
 
-  .db-avatar {
-    width: 52px;
-    height: 52px;
+  .db2-avatar-wrap {
+    position: relative;
+    margin-bottom: 12px;
+  }
+
+  .db2-avatar {
+    width: 60px;
+    height: 60px;
     border-radius: 50%;
     object-fit: cover;
-    border: 2px solid var(--green-muted);
-    flex-shrink: 0;
+    border: 3px solid var(--bg);
+    box-shadow: 0 0 0 2px var(--gmid);
   }
 
-  .db-name {
-    font-family: 'Syne', sans-serif;
-    font-size: 15px;
-    font-weight: 700;
-    color: var(--text);
-    margin: 0 0 5px;
-    line-height: 1.2;
+  .db2-status-dot {
+    position: absolute;
+    bottom: 2px;
+    right: 2px;
+    width: 12px;
+    height: 12px;
+    background: var(--gm);
+    border-radius: 50%;
+    border: 2px solid var(--bg);
+  }
+
+  .db2-name {
+  
+    font-size: 14px;
+    font-weight: 800;
+    color: var(--t1);
+    margin: 0 0 6px;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
+    max-width: 100%;
   }
 
-  .db-badge {
-    display: inline-flex;
-    align-items: center;
-    gap: 4px;
-    background: var(--green-light);
-    color: var(--green);
-    font-size: 11px;
+  .db2-role-badge {
+    font-size: 10.5px;
     font-weight: 600;
-    padding: 3px 9px;
-    border-radius: 100px;
+    color: var(--g);
+    background: var(--gl);
+    padding: 3px 10px;
+    border-radius: 999px;
     letter-spacing: 0.2px;
   }
 
-  .db-badge-dot {
-    width: 5px;
-    height: 5px;
-    border-radius: 50%;
-    background: var(--green-mid);
-  }
-
-  .db-info {
-    border-top: 1px solid var(--border);
-    padding-top: 14px;
+  .db2-card-body {
+    padding: 14px 16px 10px;
     display: flex;
     flex-direction: column;
     gap: 8px;
-    flex: 1;
   }
 
-  .db-info-row {
+  .db2-info-row {
     display: flex;
     align-items: center;
-    gap: 9px;
-    font-size: 13px;
-    color: var(--text-2);
+    gap: 8px;
+    font-size: 12.5px;
+    color: var(--t2);
   }
 
-  .db-info-icon { color: var(--green-mid); flex-shrink: 0; }
+  .db2-info-icon { color: var(--gm); flex-shrink: 0; }
 
-  .db-info-text {
-    white-space: nowrap;
+  .db2-info-text {
     overflow: hidden;
     text-overflow: ellipsis;
+    white-space: nowrap;
   }
 
-  .db-card-footer {
-    border-top: 1px solid var(--border);
-    padding-top: 14px;
-    margin-top: 14px;
+  .db2-card-footer {
+    border-top: 0.5px solid var(--bd);
+    padding: 10px 14px;
     display: flex;
-    justify-content: flex-end;
-    gap: 8px;
+    gap: 7px;
   }
 
-  .db-icon-btn {
-    width: 34px;
-    height: 34px;
+  .db2-history-btn {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 5px;
+    padding: 7px;
+    background: var(--gl);
+    border: 0.5px solid var(--gmid);
+    border-radius: 999px;
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--g);
+    cursor: pointer;
+    transition: background 0.15s;
+ 
+  }
+  .db2-history-btn:hover { background: var(--gmid); }
+
+  .db2-icon-btn {
+    width: 32px;
+    height: 32px;
     border-radius: 50%;
-    border: 1px solid var(--border);
-    background: var(--surface-2);
+    border: 0.5px solid var(--bd);
+    background: var(--bg2);
     display: flex;
     align-items: center;
     justify-content: center;
     cursor: pointer;
-    transition: all 0.15s;
-    color: var(--text-3);
+    color: var(--t3);
+    transition: all 0.14s;
+    flex-shrink: 0;
   }
+  .db2-icon-btn:hover { background: var(--bg3); border-color: var(--bds); color: var(--t2); }
+  .db2-icon-btn.danger:hover { background: var(--redl); border-color: #fecaca; color: var(--red); }
 
-  .db-icon-btn:hover {
-    background: var(--surface-3);
-    border-color: var(--border-strong);
-    color: var(--text);
-  }
-
-  .db-icon-btn.danger:hover {
-    background: var(--red-light);
-    border-color: #f5b7b1;
-    color: var(--red);
-  }
-
-  .db-empty {
+  .db2-empty {
     text-align: center;
-    padding: 60px 20px;
-    background: var(--surface-2);
+    padding: 64px 24px;
+    background: var(--bg2);
     border-radius: 18px;
-    border: 1px dashed var(--border-strong);
+    border: 0.5px dashed var(--bds);
   }
+  .db2-empty-icon { color: var(--bds); margin: 0 auto 12px; display: block; opacity: 0.7; }
+  .db2-empty p { color: var(--t3); font-size: 13.5px; margin: 0; }
 
-  .db-empty-icon {
-    color: var(--text-3);
-    margin: 0 auto 12px;
-    display: block;
-    opacity: 0.5;
-  }
-
-  .db-empty-text {
-    color: var(--text-3);
-    font-size: 14px;
-    margin: 0;
-  }
-
-  /* SPINNER */
-  .db-spinner-wrap {
-    display: flex;
-    justify-content: center;
-    padding: 60px 0;
-  }
-
-  .db-spinner {
-    width: 32px; height: 32px;
-    border: 2.5px solid var(--green-muted);
-    border-top-color: var(--green);
+  .db2-spinner-wrap { display: flex; justify-content: center; padding: 60px 0; }
+  .db2-spinner {
+    width: 30px; height: 30px;
+    border: 2.5px solid var(--gmid);
+    border-top-color: var(--g);
     border-radius: 50%;
-    animation: db-spin 0.7s linear infinite;
+    animation: db2-spin 0.7s linear infinite;
   }
-  @keyframes db-spin { to { transform: rotate(360deg); } }
+  @keyframes db2-spin { to { transform: rotate(360deg); } }
 
-  /* MODAL OVERLAY */
-  .db-overlay {
+  /* MODAL */
+  .db2-overlay {
     position: fixed;
     inset: 0;
-    background: rgba(5, 20, 10, 0.55);
+    background: rgba(5, 20, 10, 0.5);
     backdrop-filter: blur(4px);
     z-index: 1050;
     display: flex;
     align-items: center;
     justify-content: center;
     padding: 16px;
-    animation: db-overlay-in 0.18s ease;
+    animation: db2-overlay-in 0.18s ease;
   }
-  @keyframes db-overlay-in { from { opacity: 0; } to { opacity: 1; } }
+  @keyframes db2-overlay-in { from { opacity: 0; } to { opacity: 1; } }
 
-  .db-modal {
-    background: var(--surface);
+  .db2-modal {
+    background: var(--bg);
     border-radius: 22px;
     width: 100%;
-    max-width: 460px;
-    box-shadow: 0 8px 40px rgba(5,30,15,0.18);
-    animation: db-modal-in 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+    max-width: 440px;
     overflow: hidden;
+    border: 0.5px solid var(--bd);
+    box-shadow: 0 24px 60px rgba(0,0,0,0.14);
+    animation: db2-modal-in 0.22s cubic-bezier(0.16, 1, 0.3, 1);
   }
-  @keyframes db-modal-in {
-    from { opacity: 0; transform: translateY(16px) scale(0.97); }
-    to { opacity: 1; transform: none; }
+  @keyframes db2-modal-in {
+    from { opacity: 0; transform: translateY(14px) scale(0.97); }
+    to   { opacity: 1; transform: none; }
   }
 
-  .db-modal-header {
-    padding: 22px 24px 18px;
-    border-bottom: 1px solid var(--border);
+  .db2-modal-head {
+    padding: 20px 22px 18px;
+    border-bottom: 0.5px solid var(--bd);
     display: flex;
     justify-content: space-between;
     align-items: center;
-    background: var(--surface-2);
+    background: var(--bg2);
   }
 
-  .db-modal-title {
-    font-family: 'Syne', sans-serif;
-    font-size: 17px;
+  .db2-modal-title {
+   
+    font-size: 16px;
     font-weight: 800;
-    color: var(--green);
+    color: var(--g);
     margin: 0;
-    letter-spacing: -0.3px;
+    letter-spacing: -0.2px;
   }
 
-  .db-modal-close {
-    width: 30px; height: 30px;
+  .db2-modal-close {
+    width: 28px; height: 28px;
     border-radius: 50%;
-    border: 1px solid var(--border);
-    background: var(--surface);
+    border: 0.5px solid var(--bd);
+    background: var(--bg);
     cursor: pointer;
     display: flex; align-items: center; justify-content: center;
-    color: var(--text-3);
-    transition: all 0.15s;
+    color: var(--t3);
+    transition: all 0.14s;
   }
-  .db-modal-close:hover { background: var(--surface-3); color: var(--text); }
+  .db2-modal-close:hover { background: var(--bg3); color: var(--t1); }
 
-  .db-modal-body {
-    padding: 22px 24px;
+  .db2-modal-body {
+    padding: 20px 22px;
     display: flex;
     flex-direction: column;
-    gap: 16px;
+    gap: 14px;
     max-height: 60vh;
     overflow-y: auto;
   }
 
-  .db-field label {
+  .db2-field label {
     display: block;
-    font-size: 12px;
+    font-size: 11px;
     font-weight: 600;
-    color: var(--text-3);
+    color: var(--t3);
     text-transform: uppercase;
-    letter-spacing: 0.6px;
-    margin-bottom: 6px;
+    letter-spacing: 0.7px;
+    margin-bottom: 5px;
   }
 
-  .db-input-wrap {
+  .db2-input-wrap {
     display: flex;
     align-items: center;
-    border: 1px solid var(--border);
+    border: 0.5px solid var(--bd);
     border-radius: 10px;
-    background: var(--surface);
+    background: var(--bg);
     overflow: hidden;
     transition: border-color 0.15s, box-shadow 0.15s;
   }
-
-  .db-input-wrap:focus-within {
-    border-color: var(--green-mid);
-    box-shadow: 0 0 0 3px rgba(34,135,63,0.10);
+  .db2-input-wrap:focus-within {
+    border-color: var(--gm);
+    box-shadow: 0 0 0 3px rgba(22,163,74,0.10);
   }
 
-  .db-input-icon {
-    padding: 0 12px;
-    color: var(--text-3);
+  .db2-input-icon {
+    padding: 0 11px;
+    color: var(--t3);
     display: flex;
     align-items: center;
     flex-shrink: 0;
   }
 
-  .db-input {
+  .db2-input {
     flex: 1;
     border: none;
     outline: none;
-    padding: 11px 12px 11px 0;
-    font-family: 'DM Sans', sans-serif;
-    font-size: 14px;
-    color: var(--text);
+    padding: 10px 12px 10px 0;
+ 
+    font-size: 13.5px;
+    color: var(--t1);
     background: transparent;
   }
+  .db2-input::placeholder { color: var(--t3); }
+  .db2-input:disabled { color: var(--t3); cursor: not-allowed; }
 
-  .db-input::placeholder { color: var(--text-3); }
-  .db-input:disabled { color: var(--text-3); cursor: not-allowed; }
+  .db2-hint { font-size: 11px; color: var(--t3); margin-top: 4px; }
 
-  .db-hint {
-    font-size: 11.5px;
-    color: var(--text-3);
-    margin-top: 5px;
-  }
-
-  .db-modal-footer {
-    padding: 16px 24px;
-    border-top: 1px solid var(--border);
+  .db2-modal-foot {
+    padding: 14px 22px;
+    border-top: 0.5px solid var(--bd);
     display: flex;
     justify-content: flex-end;
     gap: 10px;
-    background: var(--surface-2);
+    background: var(--bg2);
   }
 
-  .db-btn-cancel {
-    padding: 9px 20px;
-    border: 1px solid var(--border);
-    background: var(--surface);
-    border-radius: 100px;
-    font-family: 'Syne', sans-serif;
+  .db2-btn-cancel {
+    padding: 8px 18px;
+    border: 0.5px solid var(--bd);
+    background: var(--bg);
+    border-radius: 999px;
+   
     font-size: 13px;
     font-weight: 600;
-    color: var(--text-2);
+    color: var(--t2);
     cursor: pointer;
-    transition: all 0.15s;
+    transition: background 0.14s;
   }
-  .db-btn-cancel:hover { background: var(--surface-3); }
+  .db2-btn-cancel:hover { background: var(--bg3); }
 
-  .db-btn-submit {
-    padding: 9px 22px;
+  .db2-btn-submit {
+    padding: 8px 22px;
     border: none;
-    background: var(--green);
-    border-radius: 100px;
-    font-family: 'Syne', sans-serif;
+    background: var(--g);
+    border-radius: 999px;
+   
     font-size: 13px;
     font-weight: 700;
-    color: white;
+    color: #fff;
     cursor: pointer;
-    box-shadow: 0 2px 10px rgba(26,107,60,0.25);
-    transition: background 0.15s, transform 0.1s;
+    box-shadow: 0 2px 10px rgba(22,101,52,0.22);
+    transition: background 0.14s, transform 0.1s;
   }
-  .db-btn-submit:hover { background: #145430; }
-  .db-btn-submit:active { transform: scale(0.97); }
+  .db2-btn-submit:hover { background: #14532d; }
+  .db2-btn-submit:active { transform: scale(0.97); }
+
+  /* History modal */
+  .db2-hist-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(5,20,10,0.50);
+    backdrop-filter: blur(5px);
+    z-index: 2000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 16px;
+  }
+
+  .db2-hist-modal {
+    background: var(--bg);
+    border-radius: 20px;
+    width: 100%;
+    max-width: 480px;
+    max-height: 85vh;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.15);
+    border: 0.5px solid var(--bd);
+  }
+
+  .db2-hist-head {
+    padding: 20px 24px 16px;
+    border-bottom: 0.5px solid var(--bd);
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    background: var(--bg2);
+  }
+
+  .db2-hist-avatar {
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 2px solid var(--gm);
+  }
+
+  .db2-hist-name {
+   
+    font-weight: 800;
+    font-size: 15px;
+    color: var(--g);
+  }
+
+  .db2-hist-count {
+    font-size: 11px;
+    color: var(--t3);
+    margin-top: 2px;
+  }
+
+  .db2-hist-close {
+    margin-left: auto;
+    border: none;
+    background: var(--bg3);
+    border-radius: 50%;
+    width: 32px;
+    height: 32px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--t3);
+    transition: background 0.14s;
+    flex-shrink: 0;
+  }
+  .db2-hist-close:hover { background: var(--bd); color: var(--t1); }
+
+  .db2-hist-list {
+    overflow-y: auto;
+    flex-grow: 1;
+    padding: 12px 16px;
+  }
+
+  .db2-hist-empty {
+    text-align: center;
+    padding: 48px 0;
+  }
+
+  .db2-hist-empty p { color: var(--t3); font-size: 13px; margin: 10px 0 0; }
+
+  .db2-order-card {
+    background: var(--bg2);
+    border: 0.5px solid var(--bd);
+    border-radius: 14px;
+    padding: 14px 16px;
+    margin-bottom: 10px;
+  }
+
+  .db2-order-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 8px;
+  }
+
+  .db2-order-id {
+   
+    font-weight: 700;
+    font-size: 13px;
+    color: var(--g);
+  }
+
+  .db2-order-customer {
+    font-size: 11.5px;
+    color: var(--t3);
+    margin-top: 2px;
+  }
+
+  .db2-order-total {
+   
+    font-weight: 800;
+    font-size: 15px;
+    color: var(--t1);
+    text-align: right;
+  }
+
+  .db2-order-date {
+    font-size: 10px;
+    color: var(--t3);
+    margin-top: 2px;
+    text-align: right;
+  }
+
+  .db2-order-meta {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    border-top: 0.5px solid var(--bd);
+    padding-top: 8px;
+  }
+
+  .db2-order-meta span { font-size: 10px; color: var(--t3); }
+  .db2-order-dot { width: 3px; height: 3px; border-radius: 50%; background: var(--bds); display: inline-block; }
+
+  .db2-order-badge {
+    margin-left: auto;
+    font-size: 10px;
+    font-weight: 700;
+    color: var(--g);
+    background: var(--gl);
+    padding: 2px 9px;
+    border-radius: 999px;
+  }
+
+  .db2-hist-foot {
+    padding: 14px 24px;
+    border-top: 0.5px solid var(--bd);
+    background: var(--bg2);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  .db2-hist-foot-label {
+  
+    font-weight: 700;
+    font-size: 13px;
+    color: var(--t2);
+  }
+
+  .db2-hist-foot-val {
+  
+    font-weight: 800;
+    font-size: 17px;
+    color: var(--g);
+  }
 
   @media (max-width: 640px) {
-    .db-header { flex-direction: column; align-items: flex-start; }
-    .db-grid { grid-template-columns: 1fr; }
+    .db2-header { flex-direction: column; align-items: flex-start; }
+    .db2-grid { grid-template-columns: 1fr; }
+    .db2-stats { grid-template-columns: 1fr 1fr; }
   }
 `;
 
@@ -530,14 +714,12 @@ const DeliveryBoys = () => {
       toast.warning('Please fill all mandatory fields!', 'Missing Fields');
       return;
     }
-
     const payload = {
       name: formName,
       email: formEmail,
       phone: formPhone,
-      photoURL: formPhoto || `https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&auto=format&fit=crop&q=80`
+      photoURL: formPhoto || `https://ui-avatars.com/api/?name=${encodeURIComponent(formName)}&background=bbf7d0&color=166534`,
     };
-
     try {
       if (modalMode === 'add') {
         await deliveryBoyService.add({ ...payload, password: formPassword || 'delivery123' });
@@ -545,7 +727,7 @@ const DeliveryBoys = () => {
       } else {
         await deliveryBoyService.update(currentId, {
           displayName: formName, name: formName,
-          email: formEmail, phone: formPhone, photoURL: payload.photoURL
+          email: formEmail, phone: formPhone, photoURL: payload.photoURL,
         });
         toast.success('Delivery partner details updated!', 'Partner Updated');
       }
@@ -567,29 +749,58 @@ const DeliveryBoys = () => {
     return name.includes(term) || email.includes(term) || phone.includes(term);
   });
 
+  // Compute delivery count per boy
+  const getDeliveryCount = (boyId) =>
+    orders.filter(o =>
+      o.status === 'Delivered' &&
+      o.deliveryBoy &&
+      (o.deliveryBoy.uid === boyId || o.deliveryBoy.id === boyId)
+    ).length;
+
+  const totalDeliveries = orders.filter(o => o.status === 'Delivered').length;
+
   return (
-    <div className="db-root">
+    <div className="db2">
       <style>{styles}</style>
 
       {/* Header */}
-      <div className="db-header">
+      <div className="db2-header">
         <div>
-          <h4 className="db-title">Delivery Partners</h4>
-          <p className="db-subtitle">Manage registered delivery agents and system logins</p>
+          <h4 className="db2-title">Delivery Partners</h4>
+          <p className="db2-sub">Manage registered delivery agents and system logins</p>
         </div>
-        <button className="db-add-btn" onClick={handleOpenAdd}>
-          <Plus size={15} />
-          Add Delivery Boy
+        <button className="db2-add-btn" onClick={handleOpenAdd}>
+          <Plus size={14} />
+          Add Partner
         </button>
       </div>
 
+      {/* Stats Strip */}
+      <div className="db2-stats">
+        <div className="db2-stat">
+          <div className="db2-stat-label">Total Agents</div>
+          <div className="db2-stat-val">{deliveryBoys.length}</div>
+          <div className="db2-stat-chip">All time</div>
+        </div>
+        <div className="db2-stat">
+          <div className="db2-stat-label">Active Today</div>
+          <div className="db2-stat-val">{deliveryBoys.length}</div>
+          <div className="db2-stat-chip">On shift</div>
+        </div>
+        <div className="db2-stat">
+          <div className="db2-stat-label">Deliveries</div>
+          <div className="db2-stat-val">{totalDeliveries}</div>
+          <div className="db2-stat-chip">This month</div>
+        </div>
+      </div>
+
       {/* Search */}
-      <div className="db-search-wrap">
-        <Search size={16} className="db-search-icon" />
+      <div className="db2-search-wrap">
+        <Search size={15} className="db2-search-icon" />
         <input
           type="text"
-          className="db-search-input"
-          placeholder="Search by name, email or phone..."
+          className="db2-search-input"
+          placeholder="Search by name, email or phone…"
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
         />
@@ -597,70 +808,81 @@ const DeliveryBoys = () => {
 
       {/* Content */}
       {loading ? (
-        <div className="db-spinner-wrap">
-          <div className="db-spinner" />
+        <div className="db2-spinner-wrap">
+          <div className="db2-spinner" />
         </div>
       ) : filteredBoys.length === 0 ? (
-        <div className="db-empty">
-          <UserCheck className="db-empty-icon" size={40} />
-          <p className="db-empty-text">No active delivery partners found.</p>
+        <div className="db2-empty">
+          <UserCheck className="db2-empty-icon" size={40} />
+          <p>No active delivery partners found.</p>
         </div>
       ) : (
-        <div className="db-grid">
-          {filteredBoys.map((boy) => (
-            <div key={boy.uid || boy.id} className="db-card">
-              <div className="db-card-top">
-                <img
-                  src={boy.photoURL || `https://ui-avatars.com/api/?name=${encodeURIComponent(boy.displayName || boy.name || '')}&background=c3e4ce&color=1a6b3c`}
-                  alt={boy.displayName || boy.name}
-                  className="db-avatar"
-                />
-                <div style={{ minWidth: 0 }}>
-                  <h6 className="db-name">{boy.displayName || boy.name}</h6>
-                  <span className="db-badge">
-                    <span className="db-badge-dot" />
-                    Active Agent
-                  </span>
-                </div>
-              </div>
+        <div className="db2-grid">
+          {filteredBoys.map((boy) => {
+            const boyId = boy.uid || boy.id;
+            const deliveryCount = getDeliveryCount(boyId);
+            const avatarSrc = boy.photoURL ||
+              `https://ui-avatars.com/api/?name=${encodeURIComponent(boy.displayName || boy.name || '')}&background=bbf7d0&color=166534&size=120`;
 
-              <div className="db-info">
-                <div className="db-info-row">
-                  <Phone size={13} className="db-info-icon" />
-                  <span className="db-info-text">{boy.phone || 'No phone added'}</span>
+            return (
+              <div key={boyId} className="db2-card">
+                <div className="db2-card-top">
+                  <div className="db2-avatar-wrap">
+                    <img
+                      src={avatarSrc}
+                      alt={boy.displayName || boy.name}
+                      className="db2-avatar"
+                    />
+                    <span className="db2-status-dot" />
+                  </div>
+                  <div className="db2-name">{boy.displayName || boy.name}</div>
+                  <span className="db2-role-badge">Active Agent</span>
                 </div>
-                <div className="db-info-row">
-                  <Mail size={13} className="db-info-icon" />
-                  <span className="db-info-text">{boy.email}</span>
-                </div>
-              </div>
 
-              <div className="db-card-footer">
-                <button
-                  className="db-icon-btn"
-                  onClick={() => setSelectedBoy(boy)}
-                  title="Delivery History"
-                  style={{ flex: 1, gap: '5px', alignItems: 'center', justifyContent: 'center', fontSize: '11px', fontWeight: 700, color: 'var(--green)' }}
-                >
-                  <ClipboardList size={13} />
-                </button>
-                <button
-                  className="db-icon-btn"
-                  onClick={() => handleOpenEdit(boy)}
-                  title="Edit Partner"
-                >
-                  <Edit2 size={13} />
-                </button>
-                <button
-                  className="db-icon-btn danger"
-                  onClick={() => handleDelete(boy.uid || boy.id)}
-                  title="Delete Partner"
-                >
-                  <Trash2 size={13} />
-                </button>
+                <div className="db2-card-body">
+                  <div className="db2-info-row">
+                    <Phone size={13} className="db2-info-icon" />
+                    <span className="db2-info-text">{boy.phone || 'No phone added'}</span>
+                  </div>
+                  <div className="db2-info-row">
+                    <Mail size={13} className="db2-info-icon" />
+                    <span className="db2-info-text">{boy.email}</span>
+                  </div>
+                  <div className="db2-info-row">
+                    <Package size={13} className="db2-info-icon" />
+                    <span className="db2-info-text" style={{ color: 'var(--g)', fontWeight: 600 }}>
+                      {deliveryCount} {deliveryCount === 1 ? 'delivery' : 'deliveries'}
+                    </span>
+                  </div>
+                </div>
+
+                <div className="db2-card-footer">
+                  <button
+                    className="db2-history-btn"
+                    onClick={() => setSelectedBoy(boy)}
+                    title="Delivery History"
+                  >
+                    <ClipboardList size={12} />
+                    History
+                  </button>
+                  <button
+                    className="db2-icon-btn"
+                    onClick={() => handleOpenEdit(boy)}
+                    title="Edit Partner"
+                  >
+                    <Edit2 size={13} />
+                  </button>
+                  <button
+                    className="db2-icon-btn danger"
+                    onClick={() => handleDelete(boyId)}
+                    title="Delete Partner"
+                  >
+                    <Trash2 size={13} />
+                  </button>
+                </div>
               </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       )}
 
@@ -672,71 +894,64 @@ const DeliveryBoys = () => {
           o.deliveryBoy &&
           (o.deliveryBoy.uid === boyId || o.deliveryBoy.id === boyId)
         );
+        const avatarSrc = selectedBoy.photoURL ||
+          `https://ui-avatars.com/api/?name=${encodeURIComponent(selectedBoy.displayName || selectedBoy.name || '')}&background=bbf7d0&color=166534&size=120`;
+
         return (
           <div
-            style={{ position: 'fixed', inset: 0, background: 'rgba(5,20,10,0.55)', backdropFilter: 'blur(5px)', zIndex: 2000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '16px' }}
+            className="db2-hist-overlay"
             onClick={(e) => e.target === e.currentTarget && setSelectedBoy(null)}
           >
-            <div style={{ background: '#fff', borderRadius: '20px', width: '100%', maxWidth: '480px', maxHeight: '85vh', overflow: 'hidden', display: 'flex', flexDirection: 'column', boxShadow: '0 20px 60px rgba(0,0,0,0.15)' }}>
-              {/* Header */}
-              <div style={{ padding: '20px 24px 16px', borderBottom: '1px solid #eee', display: 'flex', alignItems: 'center', gap: '14px' }}>
-                <img
-                  src={selectedBoy.photoURL || `https://ui-avatars.com/api/?name=${encodeURIComponent(selectedBoy.displayName || selectedBoy.name || '')}&background=c3e4ce&color=1a6b3c`}
-                  alt={selectedBoy.displayName || selectedBoy.name}
-                  style={{ width: '44px', height: '44px', borderRadius: '50%', objectFit: 'cover', border: '2px solid #22873f' }}
-                />
-                <div style={{ flexGrow: 1 }}>
-                  <div style={{ fontFamily: 'Syne, sans-serif', fontWeight: 800, fontSize: '15px', color: '#1a6b3c' }}>
-                    {selectedBoy.displayName || selectedBoy.name}
-                  </div>
-                  <div style={{ fontSize: '11px', color: '#6b897a', marginTop: '2px' }}>
+            <div className="db2-hist-modal">
+              <div className="db2-hist-head">
+                <img src={avatarSrc} alt={selectedBoy.displayName || selectedBoy.name} className="db2-hist-avatar" />
+                <div>
+                  <div className="db2-hist-name">{selectedBoy.displayName || selectedBoy.name}</div>
+                  <div className="db2-hist-count">
                     {delivered.length} order{delivered.length !== 1 ? 's' : ''} delivered
                   </div>
                 </div>
-                <button
-                  onClick={() => setSelectedBoy(null)}
-                  style={{ border: 'none', background: '#f0f5f2', borderRadius: '50%', width: '32px', height: '32px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
-                >
-                  <X size={14} color="#6b897a" />
+                <button className="db2-hist-close" onClick={() => setSelectedBoy(null)}>
+                  <X size={14} />
                 </button>
               </div>
 
-              {/* Order List */}
-              <div style={{ overflowY: 'auto', flexGrow: 1, padding: '12px 16px' }}>
+              <div className="db2-hist-list">
                 {delivered.length === 0 ? (
-                  <div style={{ textAlign: 'center', padding: '48px 0' }}>
-                    <Package size={36} color="#b5cfbe" style={{ marginBottom: '10px' }} />
-                    <p style={{ color: '#6b897a', fontSize: '13px', margin: 0 }}>No deliveries completed yet</p>
+                  <div className="db2-hist-empty">
+                    <Package size={36} color="var(--bds)" />
+                    <p>No deliveries completed yet</p>
                   </div>
                 ) : delivered.map(ord => (
-                  <div key={ord.id} style={{ background: '#f7f9f8', border: '1px solid #dde8e2', borderRadius: '14px', padding: '14px 16px', marginBottom: '10px' }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '8px' }}>
+                  <div key={ord.id} className="db2-order-card">
+                    <div className="db2-order-top">
                       <div>
-                        <div style={{ fontFamily: 'Syne, sans-serif', fontWeight: 700, fontSize: '13px', color: '#1a6b3c' }}>Order #{ord.id}</div>
-                        <div style={{ fontSize: '11.5px', color: '#6b897a', marginTop: '2px' }}>{ord.customerName}</div>
+                        <div className="db2-order-id">Order #{ord.id}</div>
+                        <div className="db2-order-customer">{ord.customerName}</div>
                       </div>
-                      <div style={{ textAlign: 'right' }}>
-                        <div style={{ fontFamily: 'Syne, sans-serif', fontWeight: 800, fontSize: '15px', color: '#0f2318' }}>₹{ord.total}</div>
-                        <div style={{ fontSize: '10px', color: '#6b897a', marginTop: '2px' }}>
+                      <div>
+                        <div className="db2-order-total">₹{ord.total}</div>
+                        <div className="db2-order-date">
                           {new Date(ord.createdAt).toLocaleDateString([], { day: 'numeric', month: 'short', year: 'numeric' })}
                         </div>
                       </div>
                     </div>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px', borderTop: '1px solid #dde8e2', paddingTop: '8px' }}>
-                      <span style={{ fontSize: '10px', color: '#6b897a' }}>{ord.items?.length || 0} items</span>
-                      <span style={{ width: '3px', height: '3px', borderRadius: '50%', background: '#b5cfbe', display: 'inline-block' }}></span>
-                      <span style={{ fontSize: '10px', color: '#6b897a' }}>{ord.distanceKm?.toFixed(1)} KM</span>
-                      <span style={{ marginLeft: 'auto', fontSize: '10px', fontWeight: 700, color: '#22873f', background: '#e6f4ec', padding: '2px 9px', borderRadius: '100px' }}>✅ Delivered</span>
+                    <div className="db2-order-meta">
+                      <span>{ord.items?.length || 0} items</span>
+                      <span className="db2-order-dot" />
+                      <span>{ord.distanceKm?.toFixed(1)} KM</span>
+                      <span className="db2-order-badge">✅ Delivered</span>
                     </div>
                   </div>
                 ))}
               </div>
 
-              {/* Footer Total */}
               {delivered.length > 0 && (
-                <div style={{ padding: '14px 24px', borderTop: '1px solid #eee', background: '#f7f9f8', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <span style={{ fontFamily: 'Syne, sans-serif', fontWeight: 700, fontSize: '13px', color: '#3b5247' }}>Total Delivered Revenue</span>
-                  <span style={{ fontFamily: 'Syne, sans-serif', fontWeight: 800, fontSize: '17px', color: '#1a6b3c' }}>₹{delivered.reduce((s, o) => s + (o.total || 0), 0)}</span>
+                <div className="db2-hist-foot">
+                  <span className="db2-hist-foot-label">Total Delivered Revenue</span>
+                  <span className="db2-hist-foot-val">
+                    ₹{delivered.reduce((s, o) => s + (o.total || 0), 0)}
+                  </span>
                 </div>
               )}
             </div>
@@ -744,31 +959,30 @@ const DeliveryBoys = () => {
         );
       })()}
 
-      {/* Modal */}
+      {/* Add / Edit Modal */}
       {showModal && (
-        <div className="db-overlay" onClick={(e) => e.target === e.currentTarget && setShowModal(false)}>
-          <div className="db-modal">
-            <div className="db-modal-header">
-              <h5 className="db-modal-title">
-                {modalMode === 'add' ? 'Register Delivery Boy' : 'Edit Delivery Boy'}
+        <div className="db2-overlay" onClick={(e) => e.target === e.currentTarget && setShowModal(false)}>
+          <div className="db2-modal">
+            <div className="db2-modal-head">
+              <h5 className="db2-modal-title">
+                {modalMode === 'add' ? 'Register Delivery Partner' : 'Edit Delivery Partner'}
               </h5>
-              <button className="db-modal-close" onClick={() => setShowModal(false)}>
+              <button className="db2-modal-close" onClick={() => setShowModal(false)}>
                 <X size={14} />
               </button>
             </div>
 
             <form onSubmit={handleSubmit}>
-              <div className="db-modal-body">
+              <div className="db2-modal-body">
 
-                {/* Name */}
-                <div className="db-field">
+                <div className="db2-field">
                   <label>Name *</label>
-                  <div className="db-input-wrap">
-                    <span className="db-input-icon"><User size={14} /></span>
+                  <div className="db2-input-wrap">
+                    <span className="db2-input-icon"><User size={14} /></span>
                     <input
                       type="text"
                       required
-                      className="db-input"
+                      className="db2-input"
                       placeholder="e.g. Ramesh Kumar"
                       value={formName}
                       onChange={(e) => setFormName(e.target.value)}
@@ -776,15 +990,14 @@ const DeliveryBoys = () => {
                   </div>
                 </div>
 
-                {/* Phone */}
-                <div className="db-field">
+                <div className="db2-field">
                   <label>Phone Number *</label>
-                  <div className="db-input-wrap">
-                    <span className="db-input-icon"><Phone size={14} /></span>
+                  <div className="db2-input-wrap">
+                    <span className="db2-input-icon"><Phone size={14} /></span>
                     <input
                       type="tel"
                       required
-                      className="db-input"
+                      className="db2-input"
                       placeholder="e.g. +91 98765 43210"
                       value={formPhone}
                       onChange={(e) => setFormPhone(e.target.value)}
@@ -792,16 +1005,15 @@ const DeliveryBoys = () => {
                   </div>
                 </div>
 
-                {/* Email */}
-                <div className="db-field">
+                <div className="db2-field">
                   <label>Email Address *</label>
-                  <div className="db-input-wrap">
-                    <span className="db-input-icon"><Mail size={14} /></span>
+                  <div className="db2-input-wrap">
+                    <span className="db2-input-icon"><Mail size={14} /></span>
                     <input
                       type="email"
                       required
                       disabled={modalMode === 'edit'}
-                      className="db-input"
+                      className="db2-input"
                       placeholder="e.g. ramesh@hsporganics.com"
                       value={formEmail}
                       onChange={(e) => setFormEmail(e.target.value)}
@@ -809,47 +1021,45 @@ const DeliveryBoys = () => {
                   </div>
                 </div>
 
-                {/* Password (add only) */}
                 {modalMode === 'add' && (
-                  <div className="db-field">
+                  <div className="db2-field">
                     <label>Login Password</label>
-                    <div className="db-input-wrap">
-                      <span className="db-input-icon"><LinkIcon size={14} /></span>
+                    <div className="db2-input-wrap">
+                      <span className="db2-input-icon"><LinkIcon size={14} /></span>
                       <input
                         type="password"
-                        className="db-input"
+                        className="db2-input"
                         placeholder="Default: delivery123"
                         value={formPassword}
                         onChange={(e) => setFormPassword(e.target.value)}
                       />
                     </div>
-                    <p className="db-hint">Leave blank to use the default password.</p>
+                    <p className="db2-hint">Leave blank to use the default password.</p>
                   </div>
                 )}
 
-                {/* Photo URL */}
-                <div className="db-field">
+                <div className="db2-field">
                   <label>Profile Photo URL</label>
-                  <div className="db-input-wrap">
-                    <span className="db-input-icon"><Camera size={14} /></span>
+                  <div className="db2-input-wrap">
+                    <span className="db2-input-icon"><Camera size={14} /></span>
                     <input
                       type="url"
-                      className="db-input"
+                      className="db2-input"
                       placeholder="https://example.com/photo.jpg"
                       value={formPhoto}
                       onChange={(e) => setFormPhoto(e.target.value)}
                     />
                   </div>
-                  <p className="db-hint">Leave blank to assign a default portrait.</p>
+                  <p className="db2-hint">Leave blank to assign a default portrait.</p>
                 </div>
 
               </div>
 
-              <div className="db-modal-footer">
-                <button type="button" className="db-btn-cancel" onClick={() => setShowModal(false)}>
+              <div className="db2-modal-foot">
+                <button type="button" className="db2-btn-cancel" onClick={() => setShowModal(false)}>
                   Cancel
                 </button>
-                <button type="submit" className="db-btn-submit">
+                <button type="submit" className="db2-btn-submit">
                   {modalMode === 'add' ? 'Register Agent' : 'Save Changes'}
                 </button>
               </div>

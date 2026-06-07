@@ -318,10 +318,53 @@ const triggerCollectionChange = (collectionKey) => {
 // HELPER API IMPLEMENTATIONS (TRANSPARENT FALLBACKS)
 
 // 1. Authentication Functions
+const resolveFirebaseUserProfile = async (firebaseUser) => {
+  const adminEmail = import.meta.env.VITE_ADMIN_EMAIL || 'admin@hsporganics.com';
+  let profile = null;
+  let profileId = firebaseUser.uid;
+
+  try {
+    const uidSnapshot = await getDoc(doc(db, 'users', firebaseUser.uid));
+    if (uidSnapshot.exists()) {
+      profile = uidSnapshot.data();
+      profileId = uidSnapshot.id;
+    } else if (firebaseUser.email) {
+      const emailQuery = query(collection(db, 'users'), where('email', '==', firebaseUser.email));
+      const emailSnapshot = await getDocs(emailQuery);
+      if (!emailSnapshot.empty) {
+        profile = emailSnapshot.docs[0].data();
+        profileId = emailSnapshot.docs[0].id;
+      }
+    }
+  } catch (error) {
+    console.warn('Error resolving Firebase user profile:', error);
+  }
+
+  const displayName = profile?.displayName || profile?.name || firebaseUser.displayName || firebaseUser.email;
+  return {
+    ...profile,
+    uid: profile?.uid || profileId,
+    id: profile?.id || profileId,
+    authUid: firebaseUser.uid,
+    email: firebaseUser.email,
+    displayName,
+    name: profile?.name || displayName,
+    photoURL: profile?.photoURL || firebaseUser.photoURL || `https://ui-avatars.com/api/?name=${encodeURIComponent(displayName)}&background=2E7D32&color=fff`,
+    role: profile?.role || (firebaseUser.email === adminEmail ? 'admin' : 'customer')
+  };
+};
+
 export const authService = {
   // Returns currently logged-in user (real Firebase user or mock session)
   getCurrentUser: () => {
     if (!isMock && auth && auth.currentUser) {
+      const savedSession = sessionStorage.getItem('hsp_session');
+      if (savedSession) {
+        const savedUser = JSON.parse(savedSession);
+        if (savedUser.authUid === auth.currentUser.uid || savedUser.email === auth.currentUser.email) {
+          return savedUser;
+        }
+      }
       const fu = auth.currentUser;
       return {
         uid: fu.uid,
@@ -341,15 +384,7 @@ export const authService = {
     if (!isMock && auth && googleProvider) {
       try {
         const result = await signInWithPopup(auth, googleProvider);
-        const fu = result.user;
-        const adminEmail = import.meta.env.VITE_ADMIN_EMAIL || 'admin@hsporganics.com';
-        const userObj = {
-          uid: fu.uid,
-          email: fu.email,
-          displayName: fu.displayName || fu.email,
-          photoURL: fu.photoURL || `https://ui-avatars.com/api/?name=${encodeURIComponent(fu.displayName || fu.email)}&background=2E7D32&color=fff`,
-          role: fu.email === adminEmail ? 'admin' : 'customer'
-        };
+        const userObj = await resolveFirebaseUserProfile(result.user);
         // Persist for session
         sessionStorage.setItem('hsp_session', JSON.stringify(userObj));
         return userObj;
@@ -381,38 +416,7 @@ export const authService = {
     if (!isMock && auth) {
       try {
         const result = await signInWithEmailAndPassword(auth, email, password);
-        const fu = result.user;
-        const adminEmail = import.meta.env.VITE_ADMIN_EMAIL || 'admin@hsporganics.com';
-        let role = fu.email === adminEmail ? 'admin' : 'customer';
-        let dbUid = fu.uid;
-        
-        try {
-          const uSnap = await getDoc(doc(db, 'users', fu.uid));
-          if (uSnap.exists() && uSnap.data().role) {
-            role = uSnap.data().role;
-          } else {
-            // Check if the user was manually added (e.g. Delivery Partner)
-            const q = query(collection(db, 'users'), where('email', '==', fu.email));
-            const querySnapshot = await getDocs(q);
-            if (!querySnapshot.empty) {
-               const docData = querySnapshot.docs[0].data();
-               dbUid = querySnapshot.docs[0].id; // Use the Firestore document ID to match orders
-               if (docData.role) {
-                  role = docData.role;
-               }
-            }
-          }
-        } catch (e) {
-          console.warn("Error fetching user role:", e);
-        }
-        
-        const userObj = {
-          uid: dbUid,
-          email: fu.email,
-          displayName: fu.displayName || fu.email,
-          photoURL: fu.photoURL || `https://ui-avatars.com/api/?name=${encodeURIComponent(fu.displayName || fu.email)}&background=2E7D32&color=fff`,
-          role
-        };
+        const userObj = await resolveFirebaseUserProfile(result.user);
         sessionStorage.setItem('hsp_session', JSON.stringify(userObj));
         return userObj;
       } catch (error) {
@@ -450,31 +454,11 @@ export const authService = {
 
   onAuthStateChanged: (callback) => {
     if (!isMock && auth) {
-      return onAuthStateChanged(auth, (firebaseUser) => {
+      return onAuthStateChanged(auth, async (firebaseUser) => {
         if (firebaseUser) {
-          const adminEmail = import.meta.env.VITE_ADMIN_EMAIL || 'admin@hsporganics.com';
-          let role = firebaseUser.email === adminEmail ? 'admin' : 'customer';
-          
-          getDoc(doc(db, 'users', firebaseUser.uid)).then((uSnap) => {
-            if (uSnap.exists() && uSnap.data().role) {
-              role = uSnap.data().role;
-            }
-            callback({
-              uid: firebaseUser.uid,
-              email: firebaseUser.email,
-              displayName: firebaseUser.displayName || firebaseUser.email,
-              photoURL: firebaseUser.photoURL || `https://ui-avatars.com/api/?name=${encodeURIComponent(firebaseUser.displayName || firebaseUser.email)}&background=2E7D32&color=fff`,
-              role
-            });
-          }).catch(() => {
-            callback({
-              uid: firebaseUser.uid,
-              email: firebaseUser.email,
-              displayName: firebaseUser.displayName || firebaseUser.email,
-              photoURL: firebaseUser.photoURL || `https://ui-avatars.com/api/?name=${encodeURIComponent(firebaseUser.displayName || firebaseUser.email)}&background=2E7D32&color=fff`,
-              role
-            });
-          });
+          const userObj = await resolveFirebaseUserProfile(firebaseUser);
+          sessionStorage.setItem('hsp_session', JSON.stringify(userObj));
+          callback(userObj);
         } else {
           callback(null);
         }

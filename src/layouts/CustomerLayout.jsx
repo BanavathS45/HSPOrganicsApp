@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { Outlet, Navigate } from 'react-router-dom';
 import CustomerHeader from '../components/CustomerHeader';
 import CustomerBottomNav from '../components/CustomerBottomNav';
@@ -23,6 +23,14 @@ const CustomerLayout = () => {
 
   if (!user) {
     return <Navigate to="/login" replace />;
+  }
+
+  if (user.role === 'delivery') {
+    return <Navigate to="/delivery" replace />;
+  }
+
+  if (user.role === 'admin') {
+    return <Navigate to="/admin" replace />;
   }
 
   return (
