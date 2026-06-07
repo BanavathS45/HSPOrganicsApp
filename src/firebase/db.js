@@ -8,7 +8,7 @@ import {
 } from 'firebase/auth';
 import {
   collection, doc, getDocs, getDoc, addDoc, updateDoc, deleteDoc,
-  query, where, onSnapshot, orderBy, limit, setDoc, writeBatch
+  query, where, onSnapshot, orderBy, limit, setDoc, writeBatch, arrayUnion
 } from 'firebase/firestore';
 
 // Initial preloaded database assets (Premium organic groceries)
@@ -25,7 +25,10 @@ const INITIAL_PRODUCTS = [
     organicInfo: '100% Certified Organic, Non-GMO, Pesticide-Free, Locally Sourced.',
     image: 'https://images.unsplash.com/photo-1576045057995-568f588f82fb?w=600&auto=format&fit=crop&q=80',
     featured: true,
-    bestSeller: true
+    bestSeller: true,
+    discountType: 'percentage',
+    discountValue: 20,
+    offerPrice: 36
   },
   {
     id: 'prod-veg-2',
@@ -133,7 +136,10 @@ const INITIAL_PRODUCTS = [
     organicInfo: 'Sulphur-free coconuts, cold-processed under 45 degrees Celsius.',
     image: 'https://images.unsplash.com/photo-1574269909862-7e1d70bb8078?w=600&auto=format&fit=crop&q=80',
     featured: true,
-    bestSeller: true
+    bestSeller: true,
+    discountType: 'flat',
+    discountValue: 40,
+    offerPrice: 300
   },
   {
     id: 'prod-oil-2',
@@ -166,9 +172,12 @@ const INITIAL_PRODUCTS = [
 ];
 
 // Seed initial state in local storage helper
+const DB_PRODUCTS_VERSION = 'v4';
 const initLocalStorageDB = () => {
-  if (!localStorage.getItem('hsp_products')) {
+  const storedVer = localStorage.getItem('hsp_products_version');
+  if (!localStorage.getItem('hsp_products') || storedVer !== DB_PRODUCTS_VERSION) {
     localStorage.setItem('hsp_products', JSON.stringify(INITIAL_PRODUCTS));
+    localStorage.setItem('hsp_products_version', DB_PRODUCTS_VERSION);
   }
   if (!localStorage.getItem('hsp_orders')) {
     localStorage.setItem('hsp_orders', JSON.stringify([]));
@@ -772,6 +781,7 @@ export const orderService = {
       ],
       paymentMethod: orderData.paymentMethod || 'Cash On Delivery',
       deliveryOTP: Math.floor(1000 + Math.random() * 9000).toString(),
+      otpVerified: false,
     };
 
     if (!isMock && db) {
@@ -868,9 +878,14 @@ export const orderService = {
         { status: newStatus, time: new Date().toISOString(), message: timelineMessage }
       ];
 
+      const completionFields = newStatus === 'Delivered'
+        ? { deliveryOTP: null, otpVerified: true, deliveredAt: new Date().toISOString() }
+        : {};
+
       await updateDoc(oRef, {
         status: newStatus,
-        statusTimeline: updatedTimeline
+        statusTimeline: updatedTimeline,
+        ...completionFields
       });
 
       await notificationService.addSystemNotification({
@@ -880,7 +895,7 @@ export const orderService = {
         userId: orderData.userId
       });
 
-      return { id: orderId, ...orderData, status: newStatus, statusTimeline: updatedTimeline };
+      return { id: orderId, ...orderData, status: newStatus, statusTimeline: updatedTimeline, ...completionFields };
     }
 
     const orders = JSON.parse(localStorage.getItem('hsp_orders') || '[]');
@@ -907,6 +922,11 @@ export const orderService = {
       time: new Date().toISOString(),
       message: timelineMessage
     });
+    if (newStatus === 'Delivered') {
+      orders[index].deliveryOTP = null;
+      orders[index].otpVerified = true;
+      orders[index].deliveredAt = new Date().toISOString();
+    }
 
     localStorage.setItem('hsp_orders', JSON.stringify(orders));
     triggerCollectionChange('orders');
@@ -966,6 +986,8 @@ export const orderService = {
 
 // 5. Notifications Service
 export const notificationService = {
+  EXPIRY_MS: 24 * 60 * 60 * 1000,
+
   subscribe: (callback) => {
     if (!isMock && db) {
       return onSnapshot(collection(db, 'notifications'), (snapshot) => {
@@ -1042,6 +1064,75 @@ export const notificationService = {
     localStorage.setItem('hsp_notifications', JSON.stringify(notifications));
     triggerCollectionChange('notifications');
     return true;
+  },
+
+  dismiss: async (notificationId, userId) => {
+    if (!notificationId || !userId) return false;
+
+    if (!isMock && db) {
+      await updateDoc(doc(db, 'notifications', notificationId), {
+        dismissedBy: arrayUnion(userId)
+      });
+      return true;
+    }
+
+    const notifications = JSON.parse(localStorage.getItem('hsp_notifications') || '[]');
+    const notification = notifications.find(n => n.id === notificationId);
+    if (!notification) return false;
+    notification.dismissedBy = [...new Set([...(notification.dismissedBy || []), userId])];
+    localStorage.setItem('hsp_notifications', JSON.stringify(notifications));
+    triggerCollectionChange('notifications');
+    return true;
+  },
+
+  dismissAll: async (userId) => {
+    if (!userId) return false;
+
+    if (!isMock && db) {
+      const q = query(collection(db, 'notifications'), where('userId', 'in', ['all', userId]));
+      const snapshot = await getDocs(q);
+      const batch = writeBatch(db);
+      snapshot.forEach(d => batch.update(d.ref, { dismissedBy: arrayUnion(userId) }));
+      await batch.commit();
+      return true;
+    }
+
+    const notifications = JSON.parse(localStorage.getItem('hsp_notifications') || '[]');
+    notifications.forEach(n => {
+      if (n.userId === userId || n.userId === 'all') {
+        n.dismissedBy = [...new Set([...(n.dismissedBy || []), userId])];
+      }
+    });
+    localStorage.setItem('hsp_notifications', JSON.stringify(notifications));
+    triggerCollectionChange('notifications');
+    return true;
+  },
+
+  removeExpired: async () => {
+    const cutoff = Date.now() - notificationService.EXPIRY_MS;
+    const isExpired = notification => {
+      const createdAt = new Date(notification.createdAt).getTime();
+      return Number.isFinite(createdAt) && createdAt < cutoff;
+    };
+
+    if (!isMock && db) {
+      const snapshot = await getDocs(collection(db, 'notifications'));
+      const expired = snapshot.docs.filter(d => isExpired(d.data()));
+      if (expired.length === 0) return 0;
+      const batch = writeBatch(db);
+      expired.forEach(d => batch.delete(d.ref));
+      await batch.commit();
+      return expired.length;
+    }
+
+    const notifications = JSON.parse(localStorage.getItem('hsp_notifications') || '[]');
+    const remaining = notifications.filter(n => !isExpired(n));
+    const removedCount = notifications.length - remaining.length;
+    if (removedCount > 0) {
+      localStorage.setItem('hsp_notifications', JSON.stringify(remaining));
+      triggerCollectionChange('notifications');
+    }
+    return removedCount;
   }
 };
 
@@ -1360,5 +1451,48 @@ export const ratingService = {
     localStorage.setItem('hsp_ratings', JSON.stringify(ratings));
     triggerCollectionChange('ratings');
     return nr;
+  }
+};
+
+// 11. Biometric Authentication Service
+export const biometricService = {
+  isAvailable: () => {
+    return window.PublicKeyCredential !== undefined;
+  },
+  hasRegistered: (userId) => {
+    return localStorage.getItem('hsp_biometric_' + userId) === 'true';
+  },
+  hasAnyRegistered: () => {
+    for (let i = 0; i < localStorage.length; i++) {
+      if (localStorage.key(i)?.startsWith('hsp_biometric_')) return true;
+    }
+    return false;
+  },
+  register: async (userId) => {
+    return new Promise((resolve) => {
+      setTimeout(() => {
+        localStorage.setItem('hsp_biometric_' + userId, 'true');
+        resolve(true);
+      }, 500);
+    });
+  },
+  authenticate: async () => {
+    return new Promise((resolve, reject) => {
+      setTimeout(() => {
+        let foundUserId = null;
+        for (let i = 0; i < localStorage.length; i++) {
+          const key = localStorage.key(i);
+          if (key?.startsWith('hsp_biometric_')) {
+            foundUserId = key.replace('hsp_biometric_', '');
+            break;
+          }
+        }
+        if (foundUserId) {
+          resolve(foundUserId);
+        } else {
+          reject(new Error('No biometric credentials registered on this device.'));
+        }
+      }, 500);
+    });
   }
 };

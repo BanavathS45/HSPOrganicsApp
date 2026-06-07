@@ -22,6 +22,10 @@ const Products = () => {
   const [description, setDescription] = useState('');
   const [organicInfo, setOrganicInfo] = useState('');
 
+  // Offer States
+  const [discountType, setDiscountType] = useState('none');
+  const [discountValue, setDiscountValue] = useState('');
+
   // Image upload type selector state
   const [imageSourceType, setImageSourceType] = useState('url'); // 'url' or 'local'
   const [uploadingImage, setUploadingImage] = useState(false);
@@ -60,6 +64,8 @@ const Products = () => {
     setImage('');
     setDescription('');
     setOrganicInfo('');
+    setDiscountType('none');
+    setDiscountValue('');
     setImageSourceType('url');
     setShowModal(true);
   };
@@ -74,6 +80,8 @@ const Products = () => {
     setImage(p.image);
     setDescription(p.description);
     setOrganicInfo(p.organicInfo);
+    setDiscountType(p.discountType || 'none');
+    setDiscountValue(p.discountValue || '');
     if (p.image && p.image.startsWith('data:')) {
       setImageSourceType('local');
     } else {
@@ -89,15 +97,32 @@ const Products = () => {
       return;
     }
 
+    const basePrice = parseFloat(price);
+    const hasDiscount = discountType !== 'none' && discountValue && parseFloat(discountValue) > 0;
+    const dVal = hasDiscount ? parseFloat(discountValue) : null;
+    
+    let offerPrice = null;
+    if (hasDiscount) {
+      if (discountType === 'percentage') {
+        offerPrice = basePrice - (basePrice * dVal / 100);
+      } else {
+        offerPrice = basePrice - dVal;
+      }
+      offerPrice = Math.max(0, offerPrice);
+    }
+
     const payload = {
       name,
       category,
-      price: parseFloat(price),
+      price: basePrice,
       unit,
       stock: parseInt(stock),
       image,
       description: description || 'Fresh farm organic produce.',
-      organicInfo: organicInfo || '100% Certified Organic and Pesticide Free.'
+      organicInfo: organicInfo || '100% Certified Organic and Pesticide Free.',
+      discountType: hasDiscount ? discountType : null,
+      discountValue: dVal,
+      offerPrice: offerPrice
     };
 
     setSavingProduct(true);
@@ -191,7 +216,16 @@ const Products = () => {
                     <td className="py-3 text-muted">{p.unit}</td>
 
                     {/* Price */}
-                    <td className="py-3 fw-bold text-dark">₹{p.price}</td>
+                    <td className="py-3 fw-bold text-dark">
+                      {p.offerPrice ? (
+                        <>
+                          <span className="text-success">₹{p.offerPrice}</span>
+                          <span className="text-muted text-decoration-line-through ms-1" style={{ fontSize: '11px' }}>₹{p.price}</span>
+                        </>
+                      ) : (
+                        <span>₹{p.price}</span>
+                      )}
+                    </td>
 
                     {/* Stock status */}
                     <td className="py-3">
@@ -363,6 +397,39 @@ const Products = () => {
                         required
                       />
                     </div>
+
+                    {/* Offer/Discount Type */}
+                    <div className="col-md-6">
+                      <label className="form-label fw-semibold text-xs" style={{ color: 'var(--text-secondary, #555)' }}>Offer Discount</label>
+                      <select
+                        className="form-select form-control-organic"
+                        value={discountType}
+                        onChange={(e) => setDiscountType(e.target.value)}
+                      >
+                        <option value="none">No Offer</option>
+                        <option value="percentage">Percentage OFF (%)</option>
+                        <option value="flat">Flat Amount OFF (₹)</option>
+                      </select>
+                    </div>
+
+                    {/* Offer Value */}
+                    {discountType !== 'none' && (
+                      <div className="col-md-6">
+                        <label className="form-label fw-semibold text-xs" style={{ color: 'var(--text-secondary, #555)' }}>
+                          {discountType === 'percentage' ? 'Discount Percentage (%)' : 'Discount Amount (₹)'} *
+                        </label>
+                        <input
+                          type="number"
+                          min="1"
+                          max={discountType === 'percentage' ? "99" : price}
+                          placeholder={discountType === 'percentage' ? "e.g. 20" : "e.g. 50"}
+                          className="form-control form-control-organic"
+                          value={discountValue}
+                          onChange={(e) => setDiscountValue(e.target.value)}
+                          required={discountType !== 'none'}
+                        />
+                      </div>
+                    )}
 
                     {/* Image Source Toggle */}
                     <div className="col-12">

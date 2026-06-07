@@ -60,6 +60,11 @@ const ProductCard = ({ product, onViewDetails }) => {
           onMouseLeave={e => e.currentTarget.style.transform = 'scale(1)'}
         />
         <span style={styles.catPill}>{product.category}</span>
+        {product.discountValue && (
+          <span style={styles.offerBadge}>
+            {product.discountType === 'percentage' ? `${product.discountValue}% OFF` : `₹${product.discountValue} OFF`}
+          </span>
+        )}
         {user && (
           <button
             onClick={handleWishlist}
@@ -86,7 +91,16 @@ const ProductCard = ({ product, onViewDetails }) => {
         <div style={styles.priceRow}>
           <div>
             <div style={styles.priceLabel}>Price</div>
-            <div style={styles.priceAmt}>₹{product.price}</div>
+            <div style={styles.priceContainer}>
+              {product.offerPrice ? (
+                <>
+                  <span style={styles.priceAmt}>₹{product.offerPrice}</span>
+                  <span style={styles.oldPrice}>₹{product.price}</span>
+                </>
+              ) : (
+                <span style={styles.priceAmt}>₹{product.price}</span>
+              )}
+            </div>
           </div>
 
           {product.stock === 0 ? (
@@ -171,6 +185,18 @@ const styles = {
     padding: '2px 7px',
     borderRadius: '99px',
     border: '0.5px solid #e0e0e0',
+  },
+  offerBadge: {
+    position: 'absolute',
+    top: '8px',
+    left: '8px',
+    background: '#E24B4A',
+    color: '#fff',
+    fontSize: '9px',
+    fontWeight: '700',
+    padding: '2px 7px',
+    borderRadius: '4px',
+    zIndex: 1,
   },
   wishBtn: {
     position: 'absolute',
@@ -259,6 +285,16 @@ const styles = {
     fontSize: '15px',
     fontWeight: '500',
     color: '#1a1a1a',
+  },
+  oldPrice: {
+    fontSize: '11px',
+    color: '#999',
+    textDecoration: 'line-through',
+    marginLeft: '4px',
+  },
+  priceContainer: {
+    display: 'flex',
+    alignItems: 'baseline',
   },
   addBtn: {
     display: 'flex',

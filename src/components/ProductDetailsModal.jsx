@@ -94,6 +94,11 @@ const ProductDetailsModal = ({ product, onClose, onNavigateToCart }) => {
                       />
                     </button>
                   )}
+                  {product.discountValue && (
+                    <div className="position-absolute shadow-sm" style={{ top: '15px', left: '15px', background: '#E24B4A', color: 'white', padding: '4px 10px', borderRadius: '6px', fontSize: '11px', fontWeight: 'bold' }}>
+                      {product.discountType === 'percentage' ? `${product.discountValue}% OFF` : `₹${product.discountValue} OFF`}
+                    </div>
+                  )}
                 </div>
               </div>
 
@@ -113,7 +118,14 @@ const ProductDetailsModal = ({ product, onClose, onNavigateToCart }) => {
                   </span>
 
                   <div className="d-flex align-items-baseline mb-3">
-                    <span className="h3 fw-bold text-success font-heading m-0">₹{product.price}</span>
+                    {product.offerPrice ? (
+                      <>
+                        <span className="h3 fw-bold text-success font-heading m-0">₹{product.offerPrice}</span>
+                        <span className="text-muted text-decoration-line-through ms-2 fw-semibold" style={{ fontSize: '16px' }}>₹{product.price}</span>
+                      </>
+                    ) : (
+                      <span className="h3 fw-bold text-success font-heading m-0">₹{product.price}</span>
+                    )}
                     <span className="text-muted text-xs ms-2">(Inclusive of all taxes)</span>
                   </div>
 
@@ -176,17 +188,19 @@ const ProductDetailsModal = ({ product, onClose, onNavigateToCart }) => {
                       </div>
                     </div>
 
-                    {/* Action Buttons */}
-                    <div className="d-flex gap-2">
+                    {/* Action Buttons with modern UI */}
+                    <div className="d-flex gap-3 position-sticky bottom-0 bg-white pt-3 pb-3 mt-3 shadow-sm border-top" style={{ zIndex: 10 }}>
                       <button 
                         onClick={handleAddToCart}
-                        className="btn btn-organic-outline flex-grow-1 py-2 font-heading"
+                        className="btn btn-outline-success flex-grow-1 py-3 font-heading fw-bold rounded-pill d-flex align-items-center justify-content-center gap-2"
+                        style={{ fontSize: '15px' }}
                       >
-                        Add to Cart
+                        <ShoppingCart size={18} /> Add to Cart
                       </button>
                       <button 
                         onClick={handleBuyNow}
-                        className="btn btn-organic flex-grow-1 py-2 font-heading d-flex align-items-center justify-content-center gap-2"
+                        className="btn btn-success flex-grow-1 py-3 font-heading fw-bold text-white rounded-pill d-flex align-items-center justify-content-center gap-2 shadow-sm"
+                        style={{ fontSize: '15px' }}
                       >
                         Buy Now
                       </button>

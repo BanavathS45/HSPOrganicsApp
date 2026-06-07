@@ -118,10 +118,17 @@ const Cart = () => {
                         {item.name}
                       </h6>
                       <span className="text-secondary font-body text-xs" style={{ fontSize: '11px' }}>
-                        {item.unit} • ₹{item.price} / unit
+                        {item.unit} • {item.offerPrice ? (
+                          <>
+                            <span className="text-decoration-line-through text-muted me-1">₹{item.price}</span>
+                            <span className="text-success fw-bold">₹{item.offerPrice}</span>
+                          </>
+                        ) : (
+                          `₹${item.price}`
+                        )} / unit
                       </span>
                       <span className="fw-bold d-block font-heading text-dark mt-1" style={{ fontSize: '14px' }}>
-                        Total: ₹{item.price * item.quantity}
+                        Total: ₹{(item.offerPrice || item.price) * item.quantity}
                       </span>
                     </div>
                   </div>

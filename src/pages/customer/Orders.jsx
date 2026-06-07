@@ -1,9 +1,8 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { useApp } from '../../context/AppContext';
 import { useToast } from '../../components/Toast';
 import {
-  ClipboardCheck, Clock, CheckCircle2, ChevronDown,
-  ChevronUp, Truck, MapPin, Key, MapIcon, PackageOpen, Star
+  Clock, ChevronDown, ChevronUp, Truck, Key, MapIcon, PackageOpen, Star
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import DeliveryMap from '../../components/DeliveryMap';
@@ -37,13 +36,23 @@ const StarRating = ({ value, onChange, readonly = false }) => {
 const Orders = () => {
   const { orders, user, ratings, submitRating } = useApp();
   const { toast } = useToast();
+  const [activeTab, setActiveTab] = useState('active'); // 'active' or 'history'
   const [expandedOrder, setExpandedOrder] = useState(null);
+  const [selectedTrackingOrder, setSelectedTrackingOrder] = useState(null);
   const [ratingStars, setRatingStars] = useState({});
   const [ratingComment, setRatingComment] = useState({});
   const [ratingLoading, setRatingLoading] = useState({});
 
   const customerOrders = orders.filter(o => o.userId === user?.uid);
-  const toggleOrderExpand = (id) => setExpandedOrder(expandedOrder === id ? null : id);
+  const activeOrders = customerOrders.filter(o => o.status !== 'Delivered' && o.status !== 'Cancelled');
+  const historyOrders = customerOrders.filter(o => o.status === 'Delivered' || o.status === 'Cancelled');
+
+  const toggleOrderExpand = (order) => {
+    setExpandedOrder(expandedOrder === order.id ? null : order.id);
+    if (order.status !== 'Delivered' && order.status !== 'Cancelled') {
+      setSelectedTrackingOrder(order.id);
+    }
+  };
 
   const getExistingRating = (orderId) => ratings.find(r => r.orderId === orderId && r.userId === user?.uid);
 
@@ -90,7 +99,7 @@ const Orders = () => {
     );
   }
 
-  const trackingOrder = customerOrders.length > 0 ? customerOrders[0] : null;
+  const trackingOrder = activeOrders.find(order => order.id === selectedTrackingOrder) || activeOrders[0] || null;
   const statuses = ['Pending', 'Accepted', 'Preparing', 'Out for Delivery', 'Delivered'];
   const getStatusIndex = (s) => statuses.indexOf(s);
 
@@ -98,8 +107,25 @@ const Orders = () => {
     <div className="container-fluid pb-5 pt-2 px-3 text-start animate-fade-in-up" style={{ paddingBottom: '90px' }}>
 
       <div className="mb-4">
-        <h4 className="font-heading fw-bold text-success m-0">Delivery Tracking</h4>
-        <p className="text-muted text-xs font-body m-0">Live progress of your organic produce harvests</p>
+        <h4 className="font-heading fw-bold text-success m-0">My Orders</h4>
+        <p className="text-muted text-xs font-body m-0">Track and manage your organic produce deliveries</p>
+      </div>
+
+      <div className="d-flex gap-2 mb-4">
+        <button
+          className={`btn flex-grow-1 rounded-pill font-heading fw-bold ${activeTab === 'active' ? 'btn-success text-white' : 'btn-light border text-muted'}`}
+          onClick={() => setActiveTab('active')}
+          style={{ fontSize: '13px' }}
+        >
+          Active Deliveries
+        </button>
+        <button
+          className={`btn flex-grow-1 rounded-pill font-heading fw-bold ${activeTab === 'history' ? 'btn-success text-white' : 'btn-light border text-muted'}`}
+          onClick={() => setActiveTab('history')}
+          style={{ fontSize: '13px' }}
+        >
+          Order History
+        </button>
       </div>
 
       {customerOrders.length === 0 ? (
@@ -113,9 +139,8 @@ const Orders = () => {
         </div>
       ) : (
         <div className="row g-3">
-
           {/* Active Order Tracker */}
-          {trackingOrder && (
+          {activeTab === 'active' && trackingOrder && (
             <div className="col-12">
               <div className="card border-0 glass-card p-3 rounded-4 shadow-sm mb-4">
                 <div className="d-flex justify-content-between align-items-center mb-3">
@@ -150,13 +175,16 @@ const Orders = () => {
                     <div className="p-3 rounded-4 h-100 text-center border" style={{ backgroundColor: 'var(--accent-green-bg)' }}>
                       <Key className="text-success mb-1" size={20} />
                       <span className="text-muted text-xs d-block" style={{ fontSize: '10.5px' }}>Verification OTP</span>
-                      <strong className="font-heading text-success text-sm">{trackingOrder.deliveryOTP}</strong>
+                      <strong className="font-heading text-success text-sm d-block">{trackingOrder.deliveryOTP}</strong>
+                      <span className="text-warning font-heading fw-bold" style={{ fontSize: '9px' }}>
+                        Awaiting delivery verification
+                      </span>
                     </div>
                   </div>
                 </div>
 
                 {/* Delivery Partner Card */}
-                {trackingOrder.deliveryBoy && (
+                {trackingOrder.deliveryBoy ? (
                   <div className="p-3 bg-success bg-opacity-10 border border-success border-opacity-20 rounded-4 mb-4 d-flex flex-column gap-3">
                     <div className="d-flex align-items-center gap-3">
                       <img
@@ -214,6 +242,14 @@ const Orders = () => {
                       </span>
                     </div>
                   </div>
+                ) : (
+                  <div className="p-3 rounded-4 border mb-4 d-flex align-items-center gap-3" style={{ backgroundColor: 'var(--accent-green-bg)' }}>
+                    <Truck size={22} className="text-success flex-shrink-0" />
+                    <div>
+                      <div className="font-heading fw-bold text-success" style={{ fontSize: '12.5px' }}>Delivery partner awaiting assignment</div>
+                      <div className="text-muted font-body" style={{ fontSize: '10.5px' }}>Partner details will appear here once assigned.</div>
+                    </div>
+                  </div>
                 )}
 
                 {/* Timeline */}
@@ -247,18 +283,18 @@ const Orders = () => {
             </div>
           )}
 
-          {/* Order History */}
+          {/* Order List */}
           <div className="col-12">
             <div className="card border-0 glass-card p-3 rounded-4 shadow-sm">
-              <h5 className="font-heading fw-bold text-success mb-3">Order History</h5>
+              <h5 className="font-heading fw-bold text-success mb-3">{activeTab === 'active' ? 'Active Orders' : 'Order History'}</h5>
               <div className="d-flex flex-column gap-2">
-                {customerOrders.map((ord) => {
+                {(activeTab === 'active' ? activeOrders : historyOrders).map((ord) => {
                   const isExpanded = expandedOrder === ord.id;
                   const existingRating = getExistingRating(ord.id);
                   const itemLabels = ord.items.map(i => `${i.name} (${i.quantity})`).join(', ');
                   return (
                     <div key={ord.id} className="border rounded-4 p-3 bg-white" style={{ borderColor: 'var(--border-color)' }}>
-                      <div className="d-flex justify-content-between align-items-center cursor-pointer" onClick={() => toggleOrderExpand(ord.id)}>
+                      <div className="d-flex justify-content-between align-items-center cursor-pointer" onClick={() => toggleOrderExpand(ord)}>
                         <div className="text-truncate" style={{ maxWidth: '75%' }}>
                           <h6 className="m-0 font-heading fw-bold text-success text-truncate" style={{ fontSize: '13.5px' }}>
                             Order: #{ord.id}
@@ -275,6 +311,45 @@ const Orders = () => {
 
                       {isExpanded && (
                         <div className="mt-3 pt-3 border-top animate-fade-in-up">
+                          <div className="row g-2 mb-3">
+                            <div className="col-6">
+                              <div className="p-2 rounded-3 border h-100" style={{ backgroundColor: 'var(--accent-green-bg)' }}>
+                                <span className="text-muted d-block" style={{ fontSize: '9px' }}>Order status</span>
+                                <strong className="font-heading text-success" style={{ fontSize: '11px' }}>{ord.status}</strong>
+                              </div>
+                            </div>
+                            {ord.status !== 'Delivered' && ord.status !== 'Cancelled' && (
+                              <div className="col-6">
+                                <div className="p-2 rounded-3 border h-100">
+                                  <span className="text-muted d-block" style={{ fontSize: '9px' }}>OTP verification</span>
+                                  <strong className="font-heading text-warning" style={{ fontSize: '11px' }}>
+                                    {ord.otpVerified ? 'Verified' : 'Pending'}
+                                  </strong>
+                                </div>
+                              </div>
+                            )}
+                          </div>
+                          {ord.status !== 'Delivered' && ord.status !== 'Cancelled' && (
+                            ord.deliveryBoy ? (
+                              <div className="d-flex align-items-center gap-2 p-2 rounded-3 border mb-3">
+                                <img
+                                  src={ord.deliveryBoy.photo || ord.deliveryBoy.photoURL}
+                                  alt={ord.deliveryBoy.name}
+                                  className="rounded-circle object-fit-cover"
+                                  style={{ width: '32px', height: '32px' }}
+                                />
+                                <div>
+                                  <span className="text-muted d-block" style={{ fontSize: '9px' }}>Assigned delivery partner</span>
+                                  <strong className="font-heading text-success d-block" style={{ fontSize: '11px' }}>{ord.deliveryBoy.name}</strong>
+                                  <span className="text-muted d-block" style={{ fontSize: '9.5px' }}>{ord.deliveryBoy.phone}</span>
+                                </div>
+                              </div>
+                            ) : (
+                              <div className="p-2 rounded-3 border mb-3 text-muted" style={{ fontSize: '10px' }}>
+                                Delivery partner has not been assigned yet.
+                              </div>
+                            )
+                          )}
                           {/* Items */}
                           <h6 className="font-heading fw-bold text-secondary text-xs mb-2">Order Items:</h6>
                           <div className="d-flex flex-column gap-1 mb-3">

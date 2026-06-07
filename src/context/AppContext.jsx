@@ -23,6 +23,7 @@ export const AppProvider = ({ children }) => {
   const [deliveryDistance, setDeliveryDistance] = useState(3.5); // Default simulated distance
   const [orders, setOrders] = useState([]);
   const [notifications, setNotifications] = useState([]);
+  const [expiredNotificationsRemoved, setExpiredNotificationsRemoved] = useState(0);
   const [coupons, setCoupons] = useState([]);
   const [activeCoupon, setActiveCoupon] = useState(null);
   const [videos, setVideos] = useState([]);
@@ -83,6 +84,7 @@ export const AppProvider = ({ children }) => {
         }
       } else {
         setUser(null);
+        setExpiredNotificationsRemoved(0);
       }
       setLoading(false);
     });
@@ -99,6 +101,19 @@ export const AppProvider = ({ children }) => {
 
   // Listeners for collections
   useEffect(() => {
+    let expiryCleanupInterval;
+    if (user) {
+      const cleanupExpiredNotifications = () => {
+        notificationService.removeExpired()
+          .then(count => {
+            if (count > 0) setExpiredNotificationsRemoved(previous => previous + count);
+          })
+          .catch(err => console.error('[HSP Notifications] Expiry cleanup failed:', err));
+      };
+      cleanupExpiredNotifications();
+      expiryCleanupInterval = window.setInterval(cleanupExpiredNotifications, 60 * 1000);
+    }
+
     // 1. Subscribe to products
     const unsubProducts = productService.subscribe((data) => {
       setProducts(data);
@@ -231,6 +246,7 @@ export const AppProvider = ({ children }) => {
       unsubCoupons();
       unsubVideos();
       unsubRatings();
+      if (expiryCleanupInterval) window.clearInterval(expiryCleanupInterval);
       window.removeEventListener('hsp_fcm_notification', handleFCMAlert);
     };
   }, [user]);
@@ -399,7 +415,7 @@ export const AppProvider = ({ children }) => {
   };
 
   // Calculations
-  const cartSubtotal = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+  const cartSubtotal = cart.reduce((sum, item) => sum + ((item.offerPrice || item.price) * item.quantity), 0);
 
   const deliveryCharge = cart.length > 0
     ? calculateDeliveryCharge(deliveryDistance, cartSubtotal)
@@ -482,6 +498,14 @@ export const AppProvider = ({ children }) => {
     }
   };
 
+  const dismissNotification = async (notificationId) => {
+    if (user) await notificationService.dismiss(notificationId, user.uid);
+  };
+
+  const clearNotifications = async () => {
+    if (user) await notificationService.dismissAll(user.uid);
+  };
+
   // Submit a rating for a delivered order
   const submitRating = async (ratingData) => {
     const result = await ratingService.submit(ratingData);
@@ -511,6 +535,7 @@ export const AppProvider = ({ children }) => {
       deliveryDistance,
       orders,
       notifications,
+      expiredNotificationsRemoved,
       coupons,
       activeCoupon,
       videos,
@@ -537,6 +562,8 @@ export const AppProvider = ({ children }) => {
       toggleWishlist,
       isProductInWishlist,
       markNotificationsRead,
+      dismissNotification,
+      clearNotifications,
       submitRating,
       activeToast,
       setActiveToast

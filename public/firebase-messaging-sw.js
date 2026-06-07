@@ -79,49 +79,48 @@ messaging.onBackgroundMessage((payload) => {
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
-// RAW PUSH EVENT (Fallback — App fully closed / killed)
-// When the app is completely closed, Firebase SDK may not be active.
-// This raw push listener catches the notification payload directly from
-// the browser's Push API and shows it via showNotification().
+// RAW PUSH HANDLER (Fallback for Terminated State)
+// Ensures data notifications are processed even if the app is fully killed
+// and Firebase SDK initialization gets delayed or skips the background handler.
 // ─────────────────────────────────────────────────────────────────────────────
 
 self.addEventListener('push', (event) => {
-  console.log('[HSP SW] Raw push event received (app may be closed)');
+  if (!event.data) return;
 
-  let payload = {};
   try {
-    payload = event.data ? event.data.json() : {};
+    const payload = event.data.json();
+    
+    // If the payload contains a 'notification' object, the browser (or Firebase SDK) 
+    // will typically handle it automatically. We manually handle 'data-only' payloads 
+    // or cases where we need guaranteed delivery in terminated state.
+    if (!payload.notification) {
+      const data = payload.data || {};
+      const title = data.title || 'HSP Organics 🌿';
+      const body  = data.body  || 'You have a new update!';
+      const icon  = data.icon  || '/pwa-192x192.png';
+      const url   = data.url || '/';
+
+      const showNotifPromise = self.registration.showNotification(title, {
+        body,
+        icon,
+        badge: '/pwa-192x192.png',
+        data: { url },
+        tag: data.tag || 'hsp-notification',
+        renotify: true,
+        vibrate: [200, 100, 200]
+      });
+      event.waitUntil(showNotifPromise);
+    }
   } catch (err) {
-    console.warn('[HSP SW] Could not parse push payload as JSON:', err);
-    try {
-      payload = { notification: { title: 'HSP Organics 🌿', body: event.data?.text() || 'You have a new update!' } };
-    } catch (_) {}
+    console.error('[HSP SW] Push event parsing error:', err);
+    // Fallback for non-JSON payloads
+    event.waitUntil(
+      self.registration.showNotification('HSP Organics 🌿', {
+        body: event.data.text(),
+        icon: '/pwa-192x192.png'
+      })
+    );
   }
-
-  const notification = payload.notification || {};
-  const data = payload.data || {};
-
-  const title = notification.title || data.title || 'HSP Organics 🌿';
-  const body  = notification.body  || data.body  || 'You have a new update from HSP Organics.';
-  const icon  = notification.icon  || '/pwa-192x192.png';
-  const url   = data.url || '/';
-
-  event.waitUntil(
-    self.registration.showNotification(title, {
-      body,
-      icon,
-      badge: '/pwa-192x192.png',
-      data: { url },
-      tag: 'hsp-push-notification',
-      renotify: true,
-      vibrate: [300, 100, 300, 100, 300],
-      requireInteraction: true,  // stays on screen until user interacts
-      actions: [
-        { action: 'open',    title: '🛒 Open App' },
-        { action: 'dismiss', title: '❌ Dismiss'  }
-      ]
-    })
-  );
 });
 
 // ─────────────────────────────────────────────────────────────────────────────

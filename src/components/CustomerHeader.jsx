@@ -2,17 +2,123 @@ import React, { useState, useRef, useEffect } from 'react';
 import { useApp } from '../context/AppContext';
 import {
   MapPin, Sun, Moon, ShoppingCart, LogOut,
-  Heart, Bell, X, User, ChevronDown
+  Heart, Bell, X, ChevronDown, PackageCheck, Megaphone, Sparkles, Trash2, Info, Fingerprint
 } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
-import { isMock } from '../firebase/config';
+import { isMock, db } from '../firebase/config';
+import { biometricService } from '../firebase/db';
 import { useToast } from './Toast';
+
+const notificationTypeMeta = {
+  order_status: { icon: PackageCheck, label: 'Order update', tone: 'order' },
+  new_product: { icon: Sparkles, label: 'New arrival', tone: 'product' },
+  general: { icon: Megaphone, label: 'Announcement', tone: 'general' },
+};
+
+const formatNotificationTime = (createdAt) => {
+  const date = new Date(createdAt);
+  if (Number.isNaN(date.getTime())) return '';
+
+  const now = new Date();
+  const minutes = Math.floor((now.getTime() - date.getTime()) / 60000);
+  const hours = Math.floor(minutes / 60);
+
+  if (minutes < 1) return 'Just now';
+  if (minutes < 60) return `${minutes}m ago`;
+  if (hours < 24 && date.getDate() === now.getDate()) return `${hours}h ago`;
+  return date.toLocaleDateString([], { month: 'short', day: 'numeric' });
+};
+
+const CustomerNotificationPanel = ({
+  notifications, unreadCount, expiredCount, onClose, onDelete, onClear
+}) => (
+  <div className="customer-notification-panel animate-fade-in-up">
+    <div className="customer-notification-header">
+      <div>
+        <div className="d-flex align-items-center gap-2">
+          <span className="customer-notification-title">Notifications</span>
+          {unreadCount > 0 && <span className="customer-notification-count">{unreadCount} new</span>}
+        </div>
+        <span className="customer-notification-subtitle">Updates from HSP Organics</span>
+      </div>
+      <div className="d-flex align-items-center gap-1">
+        {notifications.length > 0 && (
+          <button onClick={onClear} className="customer-notification-clear">Clear all</button>
+        )}
+        <button onClick={onClose} className="customer-notification-close" aria-label="Close notifications">
+          <X size={15} />
+        </button>
+      </div>
+    </div>
+
+    <div className="customer-notification-list">
+      <div className="customer-notification-expiry-note">
+        <Info size={13} />
+        <span>
+          {expiredCount > 0
+            ? `${expiredCount} notification${expiredCount === 1 ? '' : 's'} older than 24 hours removed automatically.`
+            : 'Notifications are automatically removed after 24 hours.'}
+        </span>
+      </div>
+      {notifications.length === 0 ? (
+        <div className="customer-notification-empty">
+          <div className="customer-notification-empty-icon"><Bell size={24} /></div>
+          <div className="font-heading fw-bold">You're all caught up</div>
+          <p>Order updates and fresh offers will appear here.</p>
+        </div>
+      ) : notifications.map((notification, index) => {
+        const meta = notificationTypeMeta[notification.type] || notificationTypeMeta.general;
+        const NotificationIcon = meta.icon;
+        const previous = notifications[index - 1];
+        const today = new Date().toDateString();
+        const notificationDay = new Date(notification.createdAt).toDateString();
+        const previousDay = previous ? new Date(previous.createdAt).toDateString() : null;
+        const showSection = !previous || notificationDay !== previousDay;
+
+        return (
+          <React.Fragment key={notification.id}>
+            {showSection && (
+              <div className="customer-notification-section-label">
+                {notificationDay === today ? 'Today' : 'Earlier'}
+              </div>
+            )}
+            <div className={`customer-notification-item ${!notification.read ? 'is-unread' : ''}`}>
+              <div className={`customer-notification-icon tone-${meta.tone}`}>
+                <NotificationIcon size={17} />
+              </div>
+              <div className="customer-notification-content">
+                <div className="d-flex align-items-start justify-content-between gap-2">
+                  <div className="customer-notification-item-title">{notification.title}</div>
+                  <span className="customer-notification-time">{formatNotificationTime(notification.createdAt)}</span>
+                </div>
+                <p>{notification.body}</p>
+                <span className={`customer-notification-type tone-${meta.tone}`}>{meta.label}</span>
+              </div>
+              {!notification.read && <span className="customer-notification-unread-dot" />}
+              <button
+                onClick={() => onDelete(notification.id)}
+                className="customer-notification-delete"
+                aria-label={`Delete ${notification.title}`}
+                title="Delete notification"
+              >
+                <Trash2 size={13} />
+              </button>
+            </div>
+          </React.Fragment>
+        );
+      })}
+    </div>
+  </div>
+);
+
+const legacyNotificationPanel = false;
 
 const CustomerHeader = ({ onOpenAddressModal }) => {
   const {
     user, logout, cart, theme, toggleTheme,
     selectedAddress, currentLocation,
-    notifications, markNotificationsRead
+    notifications, markNotificationsRead, dismissNotification,
+    clearNotifications, expiredNotificationsRemoved
   } = useApp();
   const { confirm } = useToast();
   const navigate = useNavigate();
@@ -29,6 +135,30 @@ const CustomerHeader = ({ onOpenAddressModal }) => {
     });
     if (ok) { await logout(); navigate('/login'); }
   };
+
+  const handleBiometricToggle = async () => {
+    if (biometricService.hasRegistered(user?.uid)) {
+      const ok = await confirm('This will remove fingerprint login from this device.', {
+        title: 'Disable Fingerprint?',
+        confirmLabel: 'Disable',
+        cancelLabel: 'Keep',
+        danger: true,
+      });
+      if (ok) {
+        localStorage.removeItem('hsp_biometric_' + user.uid);
+        setShowProfileMenu(false);
+      }
+    } else {
+      try {
+        await biometricService.register(user.uid);
+        setShowProfileMenu(false);
+        // Also clear the "don't show prompt" flag so user knows it's active
+      } catch (e) {
+        alert('Failed to register biometric auth: ' + e.message);
+      }
+    }
+  };
+
   useEffect(() => {
     const handler = (e) => {
       if (
@@ -64,16 +194,30 @@ const CustomerHeader = ({ onOpenAddressModal }) => {
 
   // Filter notifications relevant to current user
   const userNotifications = notifications
-    .filter(n => n.userId === 'all' || n.userId === user?.uid)
+    .filter(n => (
+      (n.userId === 'all' || n.userId === user?.uid)
+      && !n.dismissedBy?.includes(user?.uid)
+    ))
     .slice(0, 25);
   const unreadCount = userNotifications.filter(n => !n.read).length;
 
   const handleBellClick = () => {
     const opening = !showNotifications;
     setShowNotifications(opening);
+    setShowProfileMenu(false);
     if (opening && unreadCount > 0) {
       markNotificationsRead();
     }
+  };
+
+  const handleClearNotifications = async () => {
+    const ok = await confirm('This will clear every notification from your list.', {
+      title: 'Clear notifications?',
+      confirmLabel: 'Clear all',
+      cancelLabel: 'Keep them',
+      danger: true,
+    });
+    if (ok) await clearNotifications();
   };
 
   return (
@@ -137,6 +281,16 @@ const CustomerHeader = ({ onOpenAddressModal }) => {
 
               {/* Notification Dropdown Panel */}
               {showNotifications && (
+                <CustomerNotificationPanel
+                  notifications={userNotifications}
+                  unreadCount={unreadCount}
+                  expiredCount={expiredNotificationsRemoved}
+                  onClose={() => setShowNotifications(false)}
+                  onDelete={dismissNotification}
+                  onClear={handleClearNotifications}
+                />
+              )}
+              {legacyNotificationPanel && (
                 <div
                   style={{
                     position: 'absolute',
@@ -314,6 +468,19 @@ const CustomerHeader = ({ onOpenAddressModal }) => {
                       </>
                     )}
                   </button>
+
+                  {/* Biometric Toggle */}
+                  {biometricService.isAvailable() && (
+                    <button
+                      onClick={handleBiometricToggle}
+                      className="dropdown-item d-flex align-items-center gap-2 py-2 border-0 bg-transparent w-100 rounded-3 text-start"
+                    >
+                      <Fingerprint size={15} className={biometricService.hasRegistered(user?.uid) ? "text-success" : "text-muted"} />
+                      <span className="font-heading fw-bold text-xs">
+                        {biometricService.hasRegistered(user?.uid) ? '✅ Fingerprint Active' : 'Enable Fingerprint'}
+                      </span>
+                    </button>
+                  )}
 
                   {/* Logout */}
                   <div className="border-top mt-1 pt-1">

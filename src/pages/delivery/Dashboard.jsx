@@ -1,12 +1,12 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useApp } from '../../context/AppContext';
-import { orderService, notificationService } from '../../firebase/db';
+import { orderService, notificationService, biometricService } from '../../firebase/db';
 import { useNavigate } from 'react-router-dom';
 import { useToast } from '../../components/Toast';
 import {
   Truck, LogOut, Phone, MapPin, Check, MapIcon,
   ShieldAlert, Key, ClipboardCheck, Sparkles, Navigation, Bell, X,
-  ChevronDown, User
+  ChevronDown, User, History, Fingerprint
 } from 'lucide-react';
 
 const DeliveryDashboard = () => {
@@ -14,6 +14,8 @@ const DeliveryDashboard = () => {
   const { toast, confirm } = useToast();
   const navigate = useNavigate();
   const [assignedOrders, setAssignedOrders] = useState([]);
+  const [historyOrders, setHistoryOrders] = useState([]);
+  const [showHistory, setShowHistory] = useState(false);
   const [showOtpModal, setShowOtpModal] = useState(false);
   const [otpTargetOrder, setOtpTargetOrder] = useState(null);
   const [enteredOtp, setEnteredOtp] = useState('');
@@ -33,9 +35,13 @@ const DeliveryDashboard = () => {
   useEffect(() => {
     if (user) {
       const myOrders = orders.filter(order =>
-        order.deliveryBoy && (order.deliveryBoy.uid === user.uid || order.deliveryBoy.id === user.uid)
+        order.deliveryBoy && (order.deliveryBoy.uid === user.uid || order.deliveryBoy.id === user.uid) && order.status !== 'Delivered' && order.status !== 'Cancelled'
+      );
+      const myHistory = orders.filter(order =>
+        order.deliveryBoy && (order.deliveryBoy.uid === user.uid || order.deliveryBoy.id === user.uid) && (order.status === 'Delivered' || order.status === 'Cancelled')
       );
       setAssignedOrders(myOrders);
+      setHistoryOrders(myHistory);
     }
   }, [orders, user]);
 
@@ -65,6 +71,30 @@ const DeliveryDashboard = () => {
       danger: true,
     });
     if (ok) { await logout(); navigate('/login'); }
+  };
+
+  const handleBiometricToggle = async () => {
+    if (biometricService.hasRegistered(user.uid)) {
+      const ok = await confirm('This will remove fingerprint login from this device.', {
+        title: 'Disable Fingerprint?',
+        confirmLabel: 'Disable',
+        cancelLabel: 'Keep',
+        danger: true,
+      });
+      if (ok) {
+        localStorage.removeItem('hsp_biometric_' + user.uid);
+        toast.success('Fingerprint login disabled.');
+        setShowProfileMenu(false);
+      }
+    } else {
+      try {
+        await biometricService.register(user.uid);
+        toast.success('Fingerprint / Face ID login enabled for this device!');
+        setShowProfileMenu(false);
+      } catch (e) {
+        toast.error('Could not enable biometric: ' + e.message);
+      }
+    }
   };
 
   const handleUpdateStatus = async (orderId, newStatus) => {
@@ -245,6 +275,16 @@ const DeliveryDashboard = () => {
 
           {/* Right Header Elements */}
           <div className="d-flex align-items-center gap-3">
+            {/* History Toggle */}
+            <button
+              onClick={() => setShowHistory(!showHistory)}
+              className="btn btn-light rounded-circle p-0 d-flex align-items-center justify-content-center border"
+              style={{ width: '38px', height: '38px', backgroundColor: showHistory ? '#e8f5e9' : '#ffffff', borderColor: '#eaeaea' }}
+              title="Delivery History"
+            >
+              <History size={18} className={showHistory ? 'text-success' : 'text-secondary'} />
+            </button>
+
             {/* Notifications */}
             <div className="position-relative" ref={notifRef}>
               <button
@@ -337,6 +377,18 @@ const DeliveryDashboard = () => {
                     </div>
                   </div>
                   <div className="border-top p-1">
+                    {biometricService.isAvailable() && (
+                      <button
+                        onClick={handleBiometricToggle}
+                        className="dropdown-item d-flex align-items-center gap-2 py-2 border-0 bg-transparent w-100 rounded-3 text-start"
+                        style={{ fontSize: '12px' }}
+                      >
+                        <Fingerprint size={14} className={biometricService.hasRegistered(user.uid) ? 'text-success' : 'text-muted'} />
+                        <span className="font-heading fw-bold">
+                          {biometricService.hasRegistered(user.uid) ? '✅ Fingerprint Active' : 'Enable Fingerprint'}
+                        </span>
+                      </button>
+                    )}
                     <button
                       onClick={handleLogout}
                       className="dropdown-item d-flex align-items-center gap-2 py-2 text-danger border-0 bg-transparent w-100 rounded-3 text-start font-heading fw-bold"
@@ -369,11 +421,14 @@ const DeliveryDashboard = () => {
         </div>
 
         {/* Assigned Deliveries Header */}
-        <h6 className="font-heading fw-extrabold text-secondary mb-3 d-flex align-items-center gap-2" style={{ fontSize: '13px', letterSpacing: '0.3px' }}>
-          <Truck size={16} className="text-success" /> ASSIGNED DELIVERIES ({assignedOrders.length})
-        </h6>
+        <div className="d-flex align-items-center justify-content-between mb-3">
+          <h6 className="font-heading fw-extrabold text-secondary m-0 d-flex align-items-center gap-2" style={{ fontSize: '13px', letterSpacing: '0.3px' }}>
+            {showHistory ? <History size={16} className="text-success" /> : <Truck size={16} className="text-success" />} 
+            {showHistory ? `DELIVERY HISTORY (${historyOrders.length})` : `ASSIGNED DELIVERIES (${assignedOrders.length})`}
+          </h6>
+        </div>
 
-        {assignedOrders.length === 0 ? (
+        {(showHistory ? historyOrders : assignedOrders).length === 0 ? (
           <div className="delivery-card p-5 text-center">
             <Sparkles size={40} className="text-success text-opacity-30 mb-2 mx-auto" />
             <h6 className="font-heading fw-bold text-secondary">No Deliveries Pending</h6>
@@ -383,7 +438,7 @@ const DeliveryDashboard = () => {
           </div>
         ) : (
           <div className="d-flex flex-column gap-3">
-            {assignedOrders.map((order) => (
+            {(showHistory ? historyOrders : assignedOrders).map((order) => (
               <div key={order.id} className="delivery-card p-3.5">
                 {/* Card Header */}
                 <div className="d-flex justify-content-between align-items-start mb-3 border-bottom pb-2.5">
@@ -448,7 +503,7 @@ const DeliveryDashboard = () => {
                 </div>
 
                 {/* Action Buttons */}
-                {order.status !== 'Delivered' && order.status !== 'Cancelled' && (
+                {!showHistory && order.status !== 'Delivered' && order.status !== 'Cancelled' && (
                   <div className="d-flex gap-2">
                     {order.status === 'Accepted' && (
                       <button
@@ -478,7 +533,7 @@ const DeliveryDashboard = () => {
                 )}
 
                 {order.status === 'Delivered' && (
-                  <div className="p-2.5 bg-success bg-opacity-10 border border-success border-opacity-25 rounded-3 text-center text-success font-heading fw-bold text-xs">
+                  <div className="p-2.5 bg-success bg-opacity-10 border border-success border-opacity-25 rounded-3 text-center text-success font-heading fw-bold text-xs mt-2">
                     ✅ Order Delivered & Verified!
                   </div>
                 )}

@@ -25,7 +25,7 @@ const Home = () => {
 
   // Search & Filter States
   const [searchQuery, setSearchQuery] = useState('');
-  const [selectedCategory, setSelectedCategory] = useState('All');
+  const [selectedCategory, setSelectedCategory] = useState('Home');
   const [maxPrice, setMaxPrice] = useState(1000);
   const [onlyAvailable, setOnlyAvailable] = useState(false);
   const [showFilters, setShowFilters] = useState(false);
@@ -77,14 +77,19 @@ const Home = () => {
   };
 
   // Categories list
-  const categories = ['All', 'Vegetables', 'Fruits', 'Oils', 'Cool Drinks'];
+  const categories = ['Home', 'All Products', 'Vegetables', 'Fruits', 'Oils', 'Cool Drinks', 'Featured', 'Best Sellers'];
 
   // Filtered products list
   const filteredProducts = useMemo(() => {
     return products.filter(p => {
       const matchesSearch = p.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
         p.description.toLowerCase().includes(searchQuery.toLowerCase());
-      const matchesCategory = selectedCategory === 'All' || p.category === selectedCategory;
+      
+      let matchesCategory = true;
+      if (selectedCategory === 'Featured') matchesCategory = p.featured;
+      else if (selectedCategory === 'Best Sellers') matchesCategory = p.bestSeller;
+      else if (selectedCategory !== 'Home' && selectedCategory !== 'All Products') matchesCategory = p.category === selectedCategory;
+
       const matchesPrice = p.price <= maxPrice;
       const matchesStock = !onlyAvailable || p.stock > 0;
       return matchesSearch && matchesCategory && matchesPrice && matchesStock;
@@ -247,7 +252,7 @@ const Home = () => {
                   setMaxPrice(1000);
                   setOnlyAvailable(false);
                   setSearchQuery('');
-                  setSelectedCategory('All');
+                  setSelectedCategory('Home');
                 }}
                 className="btn btn-sm btn-light rounded-pill px-3"
               >
@@ -284,11 +289,25 @@ const Home = () => {
       </div>
 
       {/* Search results catalog */}
-      {searchQuery || selectedCategory !== 'All' || showFilters ? (
+      {searchQuery || (selectedCategory !== 'Home') || showFilters ? (
         <div className="text-start mb-5 animate-fade-in-up">
           <div className="d-flex justify-content-between align-items-center mb-3">
-            <h5 className="font-heading fw-bold text-success m-0">Filtered Catalog</h5>
-            <span className="badge bg-success-subtle text-success">{filteredProducts.length} Results</span>
+            <div>
+              <h5 className="font-heading fw-bold text-success m-0">
+                {selectedCategory === 'Featured' && <><Sparkles className="text-warning me-1" size={18} />Featured Picks</>}
+                {selectedCategory === 'Best Sellers' && <><Flame className="text-danger me-1" size={18} />Best Sellers</>}
+                {selectedCategory === 'All Products' && 'All Products'}
+                {selectedCategory !== 'Featured' && selectedCategory !== 'Best Sellers' && selectedCategory !== 'All Products' && (searchQuery ? `Search: "${searchQuery}"` : selectedCategory)}
+              </h5>
+              <span className="text-muted font-body" style={{ fontSize: '12px' }}>{filteredProducts.length} products found</span>
+            </div>
+            <button
+              onClick={() => { setSelectedCategory('Home'); setSearchQuery(''); }}
+              className="btn btn-sm btn-light rounded-pill px-3 border"
+              style={{ fontSize: '12px' }}
+            >
+              ← Home
+            </button>
           </div>
 
           {filteredProducts.length === 0 ? (
@@ -316,7 +335,7 @@ const Home = () => {
               <h5 className="font-heading fw-bold text-success m-0 d-flex align-items-center gap-1">
                 <Sparkles className="text-warning" size={20} /> Featured Picks
               </h5>
-              <button onClick={() => setSelectedCategory('All')} className="btn btn-sm btn-link text-success p-0 d-flex align-items-center text-decoration-none fw-bold" style={{ fontSize: '13px' }}>
+              <button onClick={() => setSelectedCategory('Featured')} className="btn btn-sm btn-link text-success p-0 d-flex align-items-center text-decoration-none fw-bold" style={{ fontSize: '13px' }}>
                 See All <ChevronRight size={14} />
               </button>
             </div>
@@ -335,7 +354,7 @@ const Home = () => {
               <h5 className="font-heading fw-bold text-success m-0 d-flex align-items-center gap-1">
                 <Flame className="text-danger animate-pulse" size={20} /> Best Sellers
               </h5>
-              <button onClick={() => setSelectedCategory('All')} className="btn btn-sm btn-link text-success p-0 d-flex align-items-center text-decoration-none fw-bold" style={{ fontSize: '13px' }}>
+              <button onClick={() => setSelectedCategory('Best Sellers')} className="btn btn-sm btn-link text-success p-0 d-flex align-items-center text-decoration-none fw-bold" style={{ fontSize: '13px' }}>
                 See All <ChevronRight size={14} />
               </button>
             </div>
@@ -450,6 +469,21 @@ const Home = () => {
             <ChevronRight className="text-success" size={18} />
           </div>
 
+          {/* All Products Section in Standard View */}
+          <div className="text-start mb-4">
+            <div className="d-flex justify-content-between align-items-center mb-3">
+              <h5 className="font-heading fw-bold text-success m-0 d-flex align-items-center gap-1">
+                All Products
+              </h5>
+            </div>
+            <div className="row g-3">
+              {products.map(p => (
+                <div className="col-6 col-md-4 col-lg-3" key={p.id}>
+                  <ProductCard product={p} onViewDetails={setSelectedProduct} />
+                </div>
+              ))}
+            </div>
+          </div>
         </div>
       )}
 

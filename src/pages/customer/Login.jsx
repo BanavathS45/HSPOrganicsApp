@@ -1,7 +1,8 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useApp } from '../../context/AppContext';
 import { useNavigate, Link } from 'react-router-dom';
-import { Mail, Lock, LogIn, Eye, EyeOff } from 'lucide-react';
+import { Mail, Lock, LogIn, Eye, EyeOff, Fingerprint, X, Shield } from 'lucide-react';
+import { biometricService } from '../../firebase/db';
 
 const Login = () => {
   const { loginWithGoogle, loginWithEmailAndPassword, user } = useApp();
@@ -13,6 +14,10 @@ const Login = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
+  // Biometric enrollment prompt state
+  const [showBiometricPrompt, setShowBiometricPrompt] = useState(false);
+  const [promptUser, setPromptUser] = useState(null);
+
   React.useEffect(() => {
     if (user) {
       if (user.role === 'admin') navigate('/admin');
@@ -21,11 +26,74 @@ const Login = () => {
     }
   }, [user, navigate]);
 
+  // Show biometric enrollment prompt after first login
+  const checkAndShowBiometricPrompt = (loggedUser) => {
+    if (!biometricService.isAvailable()) return;
+    const promptKey = `hsp_biometric_prompt_${loggedUser.uid}`;
+    const alreadyShown = localStorage.getItem(promptKey);
+    const alreadyRegistered = biometricService.hasRegistered(loggedUser.uid);
+    if (!alreadyShown && !alreadyRegistered) {
+      setPromptUser(loggedUser);
+      setShowBiometricPrompt(true);
+    }
+  };
+
+  const handleEnrollBiometric = async () => {
+    if (!promptUser) return;
+    try {
+      await biometricService.register(promptUser.uid);
+      localStorage.setItem(`hsp_biometric_prompt_${promptUser.uid}`, 'shown');
+      setShowBiometricPrompt(false);
+      // Navigate based on role
+      if (promptUser.role === 'admin') navigate('/admin');
+      else if (promptUser.role === 'delivery') navigate('/delivery');
+      else navigate('/');
+    } catch (e) {
+      setShowBiometricPrompt(false);
+      navigate('/');
+    }
+  };
+
+  const handleSkipBiometric = () => {
+    if (promptUser) localStorage.setItem(`hsp_biometric_prompt_${promptUser.uid}`, 'shown');
+    setShowBiometricPrompt(false);
+    if (promptUser?.role === 'admin') navigate('/admin');
+    else if (promptUser?.role === 'delivery') navigate('/delivery');
+    else navigate('/');
+  };
+
   const handleGoogleLogin = async () => {
     setLoading(true); setError('');
-    try { await loginWithGoogle(); navigate('/'); }
+    try {
+      const logged = await loginWithGoogle();
+      checkAndShowBiometricPrompt(logged);
+      if (!biometricService.isAvailable() || biometricService.hasRegistered(logged?.uid)) {
+        if (logged?.role === 'admin') navigate('/admin');
+        else if (logged?.role === 'delivery') navigate('/delivery');
+        else navigate('/');
+      }
+    }
     catch (err) { setError(err.message || 'Google login failed.'); }
     finally { setLoading(false); }
+  };
+
+  const handleBiometricLogin = async () => {
+    setLoading(true); setError('');
+    try {
+      const userId = await biometricService.authenticate();
+      const users = JSON.parse(localStorage.getItem('hsp_users') || '[]');
+      const userObj = users.find(u => u.uid === userId);
+      if (userObj) {
+        sessionStorage.setItem('hsp_session', JSON.stringify(userObj));
+        window.location.href = userObj.role === 'admin' ? '/admin' : userObj.role === 'delivery' ? '/delivery' : '/';
+      } else {
+        throw new Error('Registered user not found. Please login with email.');
+      }
+    } catch (err) {
+      setError(err.message || 'Biometric authentication failed.');
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleEmailLogin = async (e) => {
@@ -34,9 +102,12 @@ const Login = () => {
     setLoading(true); setError('');
     try {
       const logged = await loginWithEmailAndPassword(email, password);
-      if (logged.role === 'admin') navigate('/admin');
-      else if (logged.role === 'delivery') navigate('/delivery');
-      else navigate('/');
+      checkAndShowBiometricPrompt(logged);
+      if (!biometricService.isAvailable() || biometricService.hasRegistered(logged?.uid)) {
+        if (logged.role === 'admin') navigate('/admin');
+        else if (logged.role === 'delivery') navigate('/delivery');
+        else navigate('/');
+      }
     }
     catch (err) { setError(err.message || 'Login failed.'); }
     finally { setLoading(false); }
@@ -298,6 +369,18 @@ const Login = () => {
               Continue with Google
             </button>
 
+            {biometricService.isAvailable() && biometricService.hasAnyRegistered() && (
+              <button
+                onClick={handleBiometricLogin}
+                disabled={loading}
+                className="google-btn"
+                style={{ marginTop: '-10px', border: '1.5px solid #2D6A0F', color: '#2D6A0F', background: '#f0fdf4' }}
+              >
+                <Fingerprint size={20} color="#2D6A0F" />
+                Login with Fingerprint / Face ID
+              </button>
+            )}
+
             {/* Divider */}
             <div className="divider-row">
               <div className="divider-line" />
@@ -390,6 +473,74 @@ const Login = () => {
           </div>
         </div>
       </div>
+      {/* Biometric Enrollment Prompt Modal */}
+      {showBiometricPrompt && (
+        <div
+          style={{
+            position: 'fixed', inset: 0, zIndex: 9999,
+            background: 'rgba(0,0,0,0.65)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            padding: '20px'
+          }}
+        >
+          <div style={{
+            background: '#fff', borderRadius: '24px',
+            padding: '36px 28px', maxWidth: '360px', width: '100%',
+            textAlign: 'center', boxShadow: '0 20px 60px rgba(0,0,0,0.2)'
+          }}>
+            {/* Icon */}
+            <div style={{
+              width: '80px', height: '80px', borderRadius: '50%',
+              background: 'linear-gradient(135deg, #e8f5e9, #c8e6c9)',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              margin: '0 auto 20px', border: '3px solid #a5d6a7'
+            }}>
+              <Fingerprint size={40} color="#2D6A0F" />
+            </div>
+
+            <h3 style={{ fontSize: '20px', fontWeight: '700', color: '#1a1a1a', margin: '0 0 8px' }}>
+              Enable Quick Login
+            </h3>
+            <p style={{ fontSize: '13.5px', color: '#666', margin: '0 0 8px', lineHeight: '1.6' }}>
+              Use your <strong>Fingerprint</strong> or <strong>Face ID</strong> to sign in instantly next time — no password needed.
+            </p>
+            <p style={{ fontSize: '11px', color: '#aaa', margin: '0 0 28px' }}>
+              Supported on Android & iOS devices with biometric sensors.
+            </p>
+
+            <button
+              onClick={handleEnrollBiometric}
+              style={{
+                width: '100%', padding: '13px',
+                background: 'linear-gradient(135deg, #2D6A0F 0%, #3B8A1A 100%)',
+                color: '#fff', border: 'none', borderRadius: '12px',
+                fontSize: '14px', fontWeight: '600', cursor: 'pointer',
+                display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
+                marginBottom: '10px'
+              }}
+            >
+              <Fingerprint size={18} />
+              Enable Fingerprint / Face ID
+            </button>
+
+            <button
+              onClick={handleSkipBiometric}
+              style={{
+                width: '100%', padding: '12px',
+                background: 'transparent', color: '#888',
+                border: '0.5px solid #e0e0e0', borderRadius: '12px',
+                fontSize: '13px', cursor: 'pointer'
+              }}
+            >
+              Not Now
+            </button>
+
+            <p style={{ fontSize: '10px', color: '#bbb', margin: '14px 0 0' }}>
+              You can enable this anytime from your profile settings.
+            </p>
+          </div>
+        </div>
+      )}
     </>
   );
 };
