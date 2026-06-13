@@ -813,6 +813,13 @@ const DeliveryDashboard = () => {
   const notifRef = useRef(null);
   const profileRef = useRef(null);
   const [isOnline, setIsOnline] = useState(user?.isOnline !== false);
+  const [biometricRegistered, setBiometricRegistered] = useState(false);
+
+  useEffect(() => {
+    if (user) {
+      setBiometricRegistered(biometricService.hasRegistered(user.uid));
+    }
+  }, [user]);
 
   const handleToggleOnline = async () => {
     const newStatus = !isOnline;
@@ -880,6 +887,7 @@ const DeliveryDashboard = () => {
       if (ok) {
         localStorage.removeItem('hsp_biometric_cred_' + user.uid);
         localStorage.removeItem('hsp_biometric_user_' + user.uid);
+        setBiometricRegistered(false);
         toast.success('Fingerprint login disabled.');
         setShowProfileMenu(false);
       }
@@ -887,6 +895,7 @@ const DeliveryDashboard = () => {
       try {
         await biometricService.register(user.uid);
         localStorage.setItem(`hsp_biometric_user_${user.uid}`, JSON.stringify(user));
+        setBiometricRegistered(true);
         toast.success('Fingerprint / Face ID login enabled for this device!');
         setShowProfileMenu(false);
       } catch (e) {
@@ -1064,8 +1073,8 @@ const DeliveryDashboard = () => {
                 <div className="dd-menu-section">
                   {biometricService.isAvailable() && (
                     <button className="dd-menu-item" onClick={handleBiometricToggle}>
-                      <Fingerprint size={14} style={{ color: biometricService.hasRegistered(user.uid) ? 'var(--gm)' : 'var(--t3)' }} />
-                      {biometricService.hasRegistered(user.uid) ? 'Fingerprint Active' : 'Enable Fingerprint'}
+                      <Fingerprint size={14} style={{ color: biometricRegistered ? 'var(--gm)' : 'var(--t3)' }} />
+                      {biometricRegistered ? 'Fingerprint Active' : 'Enable Fingerprint'}
                     </button>
                   )}
                   <button className="dd-menu-item danger" onClick={handleLogout}>

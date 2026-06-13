@@ -98,6 +98,7 @@ const Login = () => {
 
       if (userObj) {
         sessionStorage.setItem('hsp_session', JSON.stringify(userObj));
+        localStorage.setItem('hsp_session', JSON.stringify(userObj));
         window.location.href = userObj.role === 'admin' ? '/admin' : userObj.role === 'delivery' ? '/delivery' : '/';
       } else {
         throw new Error('Registered user not found. Please login with email.');

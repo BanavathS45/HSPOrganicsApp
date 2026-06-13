@@ -318,11 +318,27 @@ const triggerCollectionChange = (collectionKey) => {
 
 // HELPER API IMPLEMENTATIONS (TRANSPARENT FALLBACKS)
 
+// Helper functions to unify sessionStorage and localStorage for PWA reliability
+const setSession = (userObj) => {
+  if (userObj) {
+    sessionStorage.setItem('hsp_session', JSON.stringify(userObj));
+    localStorage.setItem('hsp_session', JSON.stringify(userObj));
+  } else {
+    sessionStorage.removeItem('hsp_session');
+    localStorage.removeItem('hsp_session');
+  }
+};
+
+const getSession = () => {
+  const s = sessionStorage.getItem('hsp_session') || localStorage.getItem('hsp_session');
+  return s ? JSON.parse(s) : null;
+};
+
 // 1. Authentication Functions
 const resolveFirebaseUserProfile = async (firebaseUser) => {
   if (firebaseUser.isAnonymous) {
-    const session = sessionStorage.getItem('hsp_session');
-    if (session) return JSON.parse(session);
+    const session = getSession();
+    if (session) return session;
   }
 
   const adminEmail = import.meta.env.VITE_ADMIN_EMAIL || 'admin@hsporganics.com';
@@ -364,9 +380,8 @@ export const authService = {
   // Returns currently logged-in user (real Firebase user or mock session)
   getCurrentUser: () => {
     if (!isMock && auth && auth.currentUser) {
-      const savedSession = sessionStorage.getItem('hsp_session');
-      if (savedSession) {
-        const savedUser = JSON.parse(savedSession);
+      const savedUser = getSession();
+      if (savedUser) {
         if (savedUser.authUid === auth.currentUser.uid || savedUser.email === auth.currentUser.email) {
           return savedUser;
         }
@@ -380,9 +395,8 @@ export const authService = {
         role: fu.email === import.meta.env.VITE_ADMIN_EMAIL ? 'admin' : 'customer'
       };
     }
-    // Fallback: mock session stored in sessionStorage
-    const session = sessionStorage.getItem('hsp_session');
-    return session ? JSON.parse(session) : null;
+    // Fallback: mock session stored in sessionStorage/localStorage
+    return getSession();
   },
 
   // Google Sign-In via Firebase popup (real) or demo simulation (mock)
@@ -391,8 +405,7 @@ export const authService = {
       try {
         const result = await signInWithPopup(auth, googleProvider);
         const userObj = await resolveFirebaseUserProfile(result.user);
-        // Persist for session
-        sessionStorage.setItem('hsp_session', JSON.stringify(userObj));
+        setSession(userObj);
         return userObj;
       } catch (error) {
         throw new Error(error.message || 'Google Sign-In was cancelled or blocked.');
@@ -413,7 +426,7 @@ export const authService = {
       localStorage.setItem('hsp_users', JSON.stringify(users));
       triggerCollectionChange('users');
     }
-    sessionStorage.setItem('hsp_session', JSON.stringify(demoUser));
+    setSession(demoUser);
     return demoUser;
   },
 
@@ -423,7 +436,7 @@ export const authService = {
       try {
         const result = await signInWithEmailAndPassword(auth, email, password);
         const userObj = await resolveFirebaseUserProfile(result.user);
-        sessionStorage.setItem('hsp_session', JSON.stringify(userObj));
+        setSession(userObj);
         return userObj;
       } catch (error) {
         // Fallback for Delivery Boys created via Admin Panel (which only exist in Firestore, not Auth)
@@ -435,7 +448,7 @@ export const authService = {
             await signInAnonymously(auth);
             const userObj = emailSnapshot.docs[0].data();
             const sessionObj = { ...userObj, uid: emailSnapshot.docs[0].id, id: emailSnapshot.docs[0].id };
-            sessionStorage.setItem('hsp_session', JSON.stringify(sessionObj));
+            setSession(sessionObj);
             return sessionObj;
           }
         } catch (dbErr) {
@@ -460,7 +473,7 @@ export const authService = {
     if (email.toLowerCase().includes('customer') && password !== 'customer123') {
       throw new Error('Incorrect customer password. Hint: customer123');
     }
-    sessionStorage.setItem('hsp_session', JSON.stringify(user));
+    setSession(user);
     return user;
   },
 
@@ -469,7 +482,7 @@ export const authService = {
     if (!isMock && auth) {
       await signOut(auth);
     }
-    sessionStorage.removeItem('hsp_session');
+    setSession(null);
     return true;
   },
 
@@ -478,21 +491,20 @@ export const authService = {
       return onAuthStateChanged(auth, async (firebaseUser) => {
         if (firebaseUser) {
           const userObj = await resolveFirebaseUserProfile(firebaseUser);
-          sessionStorage.setItem('hsp_session', JSON.stringify(userObj));
+          setSession(userObj);
           callback(userObj);
         } else {
-          const session = sessionStorage.getItem('hsp_session');
+          const session = getSession();
           if (session) {
             signInAnonymously(auth).catch(console.error);
-            callback(JSON.parse(session));
+            callback(session);
           } else {
             callback(null);
           }
         }
       });
     }
-    const session = sessionStorage.getItem('hsp_session');
-    callback(session ? JSON.parse(session) : null);
+    callback(getSession());
     return () => {};
   }
 };
