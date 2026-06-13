@@ -21,7 +21,8 @@ const Orders = () => {
         uid: boy.uid || boy.id,
         name: boy.displayName || boy.name,
         phone: boy.phone || '',
-        photo: boy.photoURL || `https://ui-avatars.com/api/?name=${encodeURIComponent(boy.displayName || boy.name)}`
+        photo: boy.photoURL || `https://ui-avatars.com/api/?name=${encodeURIComponent(boy.displayName || boy.name)}`,
+        isOnline: boy.isOnline !== false
       }));
       setDeliveryBoys(formatted);
     });
@@ -352,7 +353,9 @@ const Orders = () => {
                           }}
                         >
                           {deliveryBoys.map(b => (
-                            <option key={b.id} value={b.id}>{b.name}</option>
+                            <option key={b.id} value={b.id} disabled={!b.isOnline}>
+                              {b.name} {b.isOnline ? '' : '(Offline)'}
+                            </option>
                           ))}
                         </select>
                       </div>
@@ -364,6 +367,7 @@ const Orders = () => {
                             <button
                               key={b.id}
                               type="button"
+                              disabled={!b.isOnline}
                               onClick={async () => {
                                 try {
                                   const updated = await orderService.updateOrder(selectedOrder.id, { deliveryBoy: b });
@@ -394,10 +398,10 @@ const Orders = () => {
                                   toast.error("Failed to assign delivery boy: " + err.message);
                                 }
                               }}
-                              className="btn btn-xs btn-outline-success rounded-pill px-2.5 py-1 font-body text-xs d-flex align-items-center gap-1"
+                              className={`btn btn-xs rounded-pill px-2.5 py-1 font-body text-xs d-flex align-items-center gap-1 ${b.isOnline ? 'btn-outline-success' : 'btn-outline-secondary opacity-50'}`}
                               style={{ fontSize: '11px' }}
                             >
-                              + Assign {b.name.split(' ')[0]}
+                              {b.isOnline ? `+ Assign ${b.name.split(' ')[0]}` : `${b.name.split(' ')[0]} (Offline)`}
                             </button>
                           ))}
                         </div>

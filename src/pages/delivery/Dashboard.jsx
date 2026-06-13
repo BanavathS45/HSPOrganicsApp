@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { useApp } from '../../context/AppContext';
-import { orderService, notificationService, biometricService } from '../../firebase/db';
+import { orderService, notificationService, biometricService, deliveryBoyService } from '../../firebase/db';
 import { useNavigate } from 'react-router-dom';
 import { useToast } from '../../components/Toast';
 import {
@@ -812,6 +812,19 @@ const DeliveryDashboard = () => {
   const [showProfileMenu, setShowProfileMenu] = useState(false);
   const notifRef = useRef(null);
   const profileRef = useRef(null);
+  const [isOnline, setIsOnline] = useState(user?.isOnline !== false);
+
+  const handleToggleOnline = async () => {
+    const newStatus = !isOnline;
+    try {
+      await deliveryBoyService.update(user.uid || user.id, { isOnline: newStatus });
+      setIsOnline(newStatus);
+      user.isOnline = newStatus;
+      toast.success(newStatus ? 'You are now online' : 'You are now offline', 'Status Updated');
+    } catch (err) {
+      toast.error('Could not update status: ' + err.message);
+    }
+  };
 
   useEffect(() => {
     if (loading) return;
@@ -865,13 +878,15 @@ const DeliveryDashboard = () => {
         title: 'Disable Fingerprint?', confirmLabel: 'Disable', cancelLabel: 'Keep', danger: true,
       });
       if (ok) {
-        localStorage.removeItem('hsp_biometric_' + user.uid);
+        localStorage.removeItem('hsp_biometric_cred_' + user.uid);
+        localStorage.removeItem('hsp_biometric_user_' + user.uid);
         toast.success('Fingerprint login disabled.');
         setShowProfileMenu(false);
       }
     } else {
       try {
         await biometricService.register(user.uid);
+        localStorage.setItem(`hsp_biometric_user_${user.uid}`, JSON.stringify(user));
         toast.success('Fingerprint / Face ID login enabled for this device!');
         setShowProfileMenu(false);
       } catch (e) {
@@ -1075,9 +1090,21 @@ const DeliveryDashboard = () => {
             </h1>
             <p className="dd-welcome-sub">Manage your assigned orders and deliveries</p>
           </div>
-          <div className="dd-active-badge">
-            <span className="dd-active-dot" />
-            Active
+          <div 
+            className="dd-active-badge" 
+            style={{ 
+              cursor: 'pointer', 
+              background: isOnline ? 'var(--gl)' : '#f3f4f6',
+              color: isOnline ? 'var(--g)' : '#6b7280'
+            }} 
+            onClick={handleToggleOnline}
+            title="Click to toggle status"
+          >
+            <span 
+              className="dd-active-dot" 
+              style={{ background: isOnline ? 'var(--gm)' : '#9ca3af' }} 
+            />
+            {isOnline ? 'Online' : 'Offline'}
           </div>
         </div>
 

@@ -43,6 +43,7 @@ const Login = () => {
     try {
       await biometricService.register(promptUser.uid);
       localStorage.setItem(`hsp_biometric_prompt_${promptUser.uid}`, 'shown');
+      localStorage.setItem(`hsp_biometric_user_${promptUser.uid}`, JSON.stringify(promptUser));
       setShowBiometricPrompt(false);
       // Navigate based on role
       if (promptUser.role === 'admin') navigate('/admin');
@@ -68,6 +69,10 @@ const Login = () => {
       const logged = await loginWithGoogle();
       checkAndShowBiometricPrompt(logged);
       if (!biometricService.isAvailable() || biometricService.hasRegistered(logged?.uid)) {
+        // Silently heal the biometric user profile cache if they already enrolled
+        if (biometricService.hasRegistered(logged?.uid)) {
+          localStorage.setItem(`hsp_biometric_user_${logged.uid}`, JSON.stringify(logged));
+        }
         if (logged?.role === 'admin') navigate('/admin');
         else if (logged?.role === 'delivery') navigate('/delivery');
         else navigate('/');
@@ -82,7 +87,15 @@ const Login = () => {
     try {
       const userId = await biometricService.authenticate();
       const users = JSON.parse(localStorage.getItem('hsp_users') || '[]');
-      const userObj = users.find(u => u.uid === userId);
+      let userObj = users.find(u => u.uid === userId);
+      
+      if (!userObj) {
+        const savedBiometricUser = localStorage.getItem(`hsp_biometric_user_${userId}`);
+        if (savedBiometricUser) {
+          userObj = JSON.parse(savedBiometricUser);
+        }
+      }
+
       if (userObj) {
         sessionStorage.setItem('hsp_session', JSON.stringify(userObj));
         window.location.href = userObj.role === 'admin' ? '/admin' : userObj.role === 'delivery' ? '/delivery' : '/';
@@ -104,6 +117,10 @@ const Login = () => {
       const logged = await loginWithEmailAndPassword(email, password);
       checkAndShowBiometricPrompt(logged);
       if (!biometricService.isAvailable() || biometricService.hasRegistered(logged?.uid)) {
+        // Silently heal the biometric user profile cache if they already enrolled
+        if (biometricService.hasRegistered(logged?.uid)) {
+          localStorage.setItem(`hsp_biometric_user_${logged.uid}`, JSON.stringify(logged));
+        }
         if (logged.role === 'admin') navigate('/admin');
         else if (logged.role === 'delivery') navigate('/delivery');
         else navigate('/');

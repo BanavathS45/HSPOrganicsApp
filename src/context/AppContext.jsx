@@ -38,6 +38,9 @@ export const AppProvider = ({ children }) => {
   const [theme, setTheme] = useState('light');
 
   // Active in-app notification state for real-time alerts
+
+
+  // Active in-app notification state for real-time alerts
   const [activeToast, setActiveToast] = useState(null);
 
   // Ref to cleanup foreground FCM listener on logout
@@ -46,45 +49,50 @@ export const AppProvider = ({ children }) => {
   // Initialize Session — listens for real Firebase auth changes OR reads mock session
   useEffect(() => {
     const unsubAuth = authService.onAuthStateChanged(async (activeUser) => {
-      if (activeUser) {
-        setUser(activeUser);
+      try {
+        if (activeUser) {
+          setUser(activeUser);
 
-        // ── Push notification permission ──────────────────────────────────
-        // Always request when permission is not yet granted (works for all roles)
-        if (typeof window !== 'undefined' && 'Notification' in window) {
-          if (Notification.permission !== 'granted') {
-            Notification.requestPermission()
-              .then((perm) => {
-                if (perm === 'granted') {
-                  console.log('[HSP] Push notification permission granted ✅');
-                } else {
-                  console.warn('[HSP] Push notification permission denied — in-app toasts will still work.');
-                }
-              })
-              .catch(console.error);
+          // ── Push notification permission ──────────────────────────────────
+          // Always request when permission is not yet granted (works for all roles)
+          if (typeof window !== 'undefined' && 'Notification' in window) {
+            if (Notification.permission !== 'granted') {
+              Notification.requestPermission()
+                .then((perm) => {
+                  if (perm === 'granted') {
+                    console.log('[HSP] Push notification permission granted ✅');
+                  } else {
+                    console.warn('[HSP] Push notification permission denied — in-app toasts will still work.');
+                  }
+                })
+                .catch(console.error);
+            }
           }
-        }
 
-        // ── FCM Token + Foreground listener ──────────────────────────────
-        // Works for all roles: admin, customer, delivery
-        registerFCMToken(activeUser.uid).catch(console.error);
-        if (fcmUnsubRef.current) fcmUnsubRef.current();
-        fcmUnsubRef.current = initForegroundMessaging();
+          // ── FCM Token + Foreground listener ──────────────────────────────
+          // Works for all roles: admin, customer, delivery
+          registerFCMToken(activeUser.uid).catch(console.error);
+          if (fcmUnsubRef.current) fcmUnsubRef.current();
+          fcmUnsubRef.current = initForegroundMessaging();
 
-        // ── Load addresses (skip for admin & delivery who don't order) ────
-        if (activeUser.role === 'customer') {
-          const addrs = await addressService.getByUser(activeUser.uid);
-          setAddresses(addrs);
-          const def = addrs.find(a => a.isDefault) || addrs[0] || null;
-          setSelectedAddress(def);
-          if (def) {
-            const dist = calculateDistance(FARM_LOCATION.lat, FARM_LOCATION.lng, def.lat, def.lng);
-            setDeliveryDistance(dist);
+          // ── Load addresses (skip for admin & delivery who don't order) ────
+          if (activeUser.role === 'customer') {
+            const addrs = await addressService.getByUser(activeUser.uid);
+            setAddresses(addrs);
+            const def = addrs.find(a => a.isDefault) || addrs[0] || null;
+            setSelectedAddress(def);
+            if (def) {
+              const dist = calculateDistance(FARM_LOCATION.lat, FARM_LOCATION.lng, def.lat, def.lng);
+              setDeliveryDistance(dist);
+            }
           }
+        } else {
+          setUser(null);
+          setExpiredNotificationsRemoved(0);
         }
-      } else {
+      } catch (err) {
+        console.error('[HSP] Auth state change error:', err);
         setUser(null);
-        setExpiredNotificationsRemoved(0);
       }
       setLoading(false);
     });

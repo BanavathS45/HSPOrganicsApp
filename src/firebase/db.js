@@ -4,7 +4,8 @@ import {
   signInWithPopup,
   signInWithEmailAndPassword,
   signOut,
-  onAuthStateChanged
+  onAuthStateChanged,
+  signInAnonymously
 } from 'firebase/auth';
 import {
   collection, doc, getDocs, getDoc, addDoc, updateDoc, deleteDoc,
@@ -319,6 +320,11 @@ const triggerCollectionChange = (collectionKey) => {
 
 // 1. Authentication Functions
 const resolveFirebaseUserProfile = async (firebaseUser) => {
+  if (firebaseUser.isAnonymous) {
+    const session = sessionStorage.getItem('hsp_session');
+    if (session) return JSON.parse(session);
+  }
+
   const adminEmail = import.meta.env.VITE_ADMIN_EMAIL || 'admin@hsporganics.com';
   let profile = null;
   let profileId = firebaseUser.uid;
@@ -420,6 +426,21 @@ export const authService = {
         sessionStorage.setItem('hsp_session', JSON.stringify(userObj));
         return userObj;
       } catch (error) {
+        // Fallback for Delivery Boys created via Admin Panel (which only exist in Firestore, not Auth)
+        try {
+          const emailQuery = query(collection(db, 'users'), where('email', '==', email), where('role', '==', 'delivery'));
+          const emailSnapshot = await getDocs(emailQuery);
+          if (!emailSnapshot.empty) {
+            // Delivery boy found in DB! Sign them in anonymously to grant Firestore access.
+            await signInAnonymously(auth);
+            const userObj = emailSnapshot.docs[0].data();
+            const sessionObj = { ...userObj, uid: emailSnapshot.docs[0].id, id: emailSnapshot.docs[0].id };
+            sessionStorage.setItem('hsp_session', JSON.stringify(sessionObj));
+            return sessionObj;
+          }
+        } catch (dbErr) {
+          console.warn('Fallback DB check failed:', dbErr);
+        }
         throw new Error(error.message || 'Authentication failed. Please check your credentials.');
       }
     }
@@ -460,7 +481,13 @@ export const authService = {
           sessionStorage.setItem('hsp_session', JSON.stringify(userObj));
           callback(userObj);
         } else {
-          callback(null);
+          const session = sessionStorage.getItem('hsp_session');
+          if (session) {
+            signInAnonymously(auth).catch(console.error);
+            callback(JSON.parse(session));
+          } else {
+            callback(null);
+          }
         }
       });
     }
